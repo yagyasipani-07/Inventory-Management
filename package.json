@@ -8,6 +8,7 @@
     "start": "next start",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "postinstall": "prisma generate",
     "lint": "next lint"
   },
   "dependencies": {

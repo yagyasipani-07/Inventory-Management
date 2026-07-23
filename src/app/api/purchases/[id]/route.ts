@@ -3,7 +3,7 @@ import { prisma } from '@/src/lib/prisma'
 import { logAudit } from '@/src/lib/audit'
 import { addFallbackPurchaseLineItem, receiveFallbackPurchase } from '@/src/lib/fallbackStore'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   try {

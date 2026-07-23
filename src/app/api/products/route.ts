@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/prisma'
 import { logAudit } from '@/src/lib/audit'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
