@@ -1,0 +1,156 @@
+// Prisma schema for Paras Plywoods (Phase 1)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  WAREHOUSE_MANAGER
+  ACCOUNTANT
+  SALES
+  READ_ONLY
+}
+
+enum ChallanStatus {
+  DRAFT
+  APPROVED
+  DISPATCHED
+  CANCELLED
+}
+
+enum PurchaseStatus {
+  PENDING
+  RECEIVED
+  VERIFIED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(READ_ONLY)
+  createdAt DateTime @default(now())
+  createdChallans Challan[] @relation("CreatedBy")
+  approvedChallans Challan[] @relation("ApprovedBy")
+}
+
+model Product {
+  id                String  @id @default(uuid())
+  slrNo             Int?
+  mould             String?
+  productCode       String  @unique
+  productQty        Int?
+  qtyPcsPerBox      Int?
+  packType          String?
+  uValue            Float?
+  lValue            Float?
+  prodWt            Float?
+  ulWt              Float?
+  currentStock      Int     @default(0)
+  reservedStock     Int     @default(0)
+  lowStockThreshold Int?    
+  createdAt         DateTime @default(now())
+  purchaseLineItems PurchaseLineItem[]
+  challanLineItems  ChallanLineItem[]
+}
+
+model Customer {
+  id                 String   @id @default(uuid())
+  name               String
+  gst                String?
+  address            String?
+  phone              String?
+  city               String?
+  preferredTransport String?
+  createdAt          DateTime @default(now())
+  challans           Challan[]
+}
+
+model Supplier {
+  id            String   @id @default(uuid())
+  name          String
+  gst           String?
+  address       String?
+  phone         String?
+  contactPerson String?
+  createdAt     DateTime @default(now())
+  purchases     Purchase[]
+}
+
+model Purchase {
+  id           String       @id @default(uuid())
+  supplierId   String
+  supplier     Supplier     @relation(fields: [supplierId], references: [id])
+  purchaseDate DateTime?
+  purchaseNumber String?
+  transport    String?
+  receivedBy   String?
+  receivedTime DateTime?
+  billFileUrl  String?
+  status       PurchaseStatus @default(PENDING)
+  remarks      String?
+  lineItems    PurchaseLineItem[]
+  createdAt    DateTime     @default(now())
+}
+
+model PurchaseLineItem {
+  id         String  @id @default(uuid())
+  purchase   Purchase @relation(fields: [purchaseId], references: [id])
+  purchaseId String
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  qty        Int
+  unitCost   Float?
+}
+
+model Challan {
+  id            String   @id @default(uuid())
+  challanNumber String   @unique
+  challanDate   DateTime?
+  customerId    String
+  customer      Customer @relation(fields: [customerId], references: [id])
+  transport     String?
+  status        ChallanStatus @default(DRAFT)
+  totalQty      Int?
+  gstPercent    Float?
+  terms         String?
+  checkedBy     String?
+  authorisedBy  String?
+  createdById   String
+  createdBy     User     @relation("CreatedBy", fields: [createdById], references: [id])
+  approvedById  String?
+  approvedBy    User?    @relation("ApprovedBy", fields: [approvedById], references: [id])
+  approvedAt    DateTime?
+  dispatchedAt  DateTime?
+  lineItems     ChallanLineItem[]
+  createdAt     DateTime @default(now())
+}
+
+model ChallanLineItem {
+  id         String  @id @default(uuid())
+  challan    Challan @relation(fields: [challanId], references: [id])
+  challanId  String
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  qty        Int
+  rate       Float?
+  amount     Float?
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  entityType String
+  entityId   String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  timestamp  DateTime @default(now())
+}
