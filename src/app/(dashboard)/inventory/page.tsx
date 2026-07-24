@@ -1,32 +1,61 @@
-import { PageHeader } from "@/components/shared/page-header";
-import { EmptyState } from "@/components/shared/empty-state";
-import { Package, Plus } from "lucide-react";
+'use client';
 
-export const metadata = { title: "Inventory" };
+import { useState } from 'react';
+import { InventoryHeader } from './_components/InventoryHeader';
+import { InventoryTable } from './_components/InventoryTable';
+import { InventoryEmptyState } from './_components/InventoryEmptyState';
+import { InventoryError } from './_components/InventoryError';
+import { InventoryTableSkeleton } from './_components/InventorySkeleton';
+import { useProducts } from './_hooks/useProducts';
+import { StockAdjustmentDialog } from './_components/StockAdjustmentDialog';
+import { DeleteProductDialog } from './_components/DeleteProductDialog';
+import { Product } from './_services/inventoryService';
 
 export default function InventoryPage() {
-  return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Inventory"
-        description="Manage your product catalog, categories, and stock levels"
-      >
-        <button className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
-          <Plus className="h-4 w-4" strokeWidth={2} />
-          Add Product
-        </button>
-      </PageHeader>
+  const { data: products, isLoading, isError, refetch } = useProducts();
 
-      <EmptyState
-        icon={Package}
-        title="No products yet"
-        description="Start building your inventory by adding your first product. You can also import products in bulk via the Import page."
-        action={
-          <button className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
-            <Plus className="h-4 w-4" strokeWidth={2} />
-            Add Your First Product
-          </button>
-        }
+  const [stockDialogProduct, setStockDialogProduct] = useState<Product | null>(null);
+  const [deleteDialogProduct, setDeleteDialogProduct] = useState<Product | null>(null);
+
+  if (isError) {
+    return (
+      <div className="max-w-[1600px] mx-auto pb-8 space-y-6">
+        <InventoryHeader />
+        <InventoryError onRetry={refetch} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-[1600px] mx-auto pb-8 space-y-6">
+      <InventoryHeader />
+
+      {isLoading ? (
+        <InventoryTableSkeleton />
+      ) : products?.length === 0 ? (
+        <InventoryEmptyState />
+      ) : (
+        <InventoryTable 
+          data={products || []} 
+          onAdjustStock={(p) => setStockDialogProduct(p)}
+          onDelete={(p) => setDeleteDialogProduct(p)}
+        />
+      )}
+
+      {/* Dialogs */}
+      <StockAdjustmentDialog
+        productId={stockDialogProduct?.id || null}
+        productName={stockDialogProduct?.name || ''}
+        currentStock={stockDialogProduct?.currentStock || 0}
+        isOpen={!!stockDialogProduct}
+        onOpenChange={(open) => !open && setStockDialogProduct(null)}
+      />
+
+      <DeleteProductDialog
+        productId={deleteDialogProduct?.id || null}
+        productName={deleteDialogProduct?.name || ''}
+        isOpen={!!deleteDialogProduct}
+        onOpenChange={(open) => !open && setDeleteDialogProduct(null)}
       />
     </div>
   );
