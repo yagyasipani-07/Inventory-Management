@@ -1,28 +1,28 @@
-import { PageHeader } from "@/components/shared/page-header";
-import { EmptyState } from "@/components/shared/empty-state";
-import { Upload } from "lucide-react";
+import { Metadata } from "next";
+import { ImportHeader } from "./_components/ImportHeader";
+import { ImportTypeCards } from "./_components/ImportTypeCards";
+import { ImportDropzone } from "./_components/ImportDropzone";
+import { ImportValidationPanel } from "./_components/ImportValidationPanel";
+import { ImportPreviewTable } from "./_components/ImportPreviewTable";
+import { ImportSummaryCards } from "./_components/ImportSummaryCards";
 
-export const metadata = { title: "Import" };
+export const metadata: Metadata = {
+  title: "Import Data | Paras Plywoods ERP",
+  description: "Bulk import inventory using CSV or Excel files.",
+};
 
 export default function ImportPage() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Import Data"
-        description="Bulk import products, customers, and stock data from CSV or Excel files"
-      />
-
-      <EmptyState
-        icon={Upload}
-        title="Import your data"
-        description="Upload a CSV or Excel file to bulk import products, customers, or stock adjustments. Supported formats: .csv, .xlsx, .xls"
-        action={
-          <button className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors duration-150 hover:bg-primary/90">
-            <Upload className="h-4 w-4" strokeWidth={2} />
-            Upload File
-          </button>
-        }
-      />
+    <div className="flex flex-col gap-6 p-6 pb-24">
+      <ImportHeader />
+      
+      <div className="space-y-6">
+        <ImportTypeCards />
+        <ImportDropzone />
+        <ImportValidationPanel />
+        <ImportPreviewTable />
+        <ImportSummaryCards />
+      </div>
     </div>
   );
 }

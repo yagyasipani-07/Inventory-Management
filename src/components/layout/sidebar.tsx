@@ -15,6 +15,7 @@ import {
   Settings,
   PanelLeftClose,
   PanelLeft,
+  Download,
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { title: "Customers", href: "/customers", icon: Users },
   { title: "Dispatch Challans", href: "/challans", icon: FileText },
   { title: "Import", href: "/import", icon: Upload },
+  { title: "Export", href: "/export", icon: Download },
   { title: "Audit Logs", href: "/audit", icon: ScrollText },
   { title: "Settings", href: "/settings", icon: Settings },
 ] as const;
