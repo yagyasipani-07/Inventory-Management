@@ -136,12 +136,19 @@ export const importService = {
   },
 
   /**
-   * Mocks the process of importing validated products to the backend.
+   * Imports validated products to the backend.
    */
   async importProducts(data: any[]): Promise<boolean> {
-    // Mock network delay (e.g., 2000ms) to simulate bulk import processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    return true; // Simulate success
+    const { apiClient, endpoints } = await import('@/src/lib/api');
+    
+    const rows = data.map(row => ({
+      productCode: String(row.productCode || row["Product Code"] || "").trim(),
+      mould: String(row.productName || row["Product Name"] || "").trim(),
+      productQty: Number(row.currentStock || row["Current Stock"] || row.stock || 0),
+    }));
+
+    await apiClient.post(endpoints.import.products, { rows });
+    return true; 
   },
   
   /**

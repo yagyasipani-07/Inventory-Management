@@ -1,3 +1,5 @@
+import { apiClient, endpoints } from '@/src/lib/api';
+
 export type AuditAction = 
   | "Create" 
   | "Update" 
@@ -55,61 +57,43 @@ export interface AuditFilters {
   search: string;
 }
 
-// Generate some mock logs
-const generateMockLogs = (): AuditLog[] => {
-  const logs: AuditLog[] = [];
-  const now = new Date();
-  
-  for (let i = 0; i < 50; i++) {
-    const time = new Date(now.getTime() - i * 3600000 - Math.random() * 3600000);
-    
-    // Some static varied data
-    const types: { action: AuditAction, module: AuditModule, desc: string, entity: string, status: AuditStatus }[] = [
-      { action: "Update", module: "Inventory", desc: "Adjusted stock manually", entity: "PLY-COM-18", status: "Success" },
-      { action: "Dispatch", module: "Challans", desc: "Dispatched Challan #CH-2023-001", entity: "CH-2023-001", status: "Success" },
-      { action: "Create", module: "Customers", desc: "Added new customer", entity: "CUST-004", status: "Success" },
-      { action: "Import", module: "Import", desc: "Bulk imported 50 products", entity: "Products", status: "Warning" },
-      { action: "Export", module: "Export", desc: "Exported current stock report", entity: "Warehouse Stock", status: "Success" },
-      { action: "Login", module: "Authentication", desc: "User logged in", entity: "admin@parasplywoods.com", status: "Success" },
-      { action: "Print", module: "Challans", desc: "Printed Dispatch Challan", entity: "CH-2023-002", status: "Success" },
-      { action: "Delete", module: "Inventory", desc: "Deleted obsolete product", entity: "OLD-PLY-01", status: "Success" },
-      { action: "Update", module: "Settings", desc: "Updated company address", entity: "Company Profile", status: "Success" },
-      { action: "Create", module: "Challans", desc: "Created draft challan", entity: "CH-2023-003", status: "Pending" },
-    ];
-    
-    const template = types[i % types.length];
-    
-    logs.push({
-      id: `log-${50 - i}`,
-      timestamp: time.toISOString(),
-      user: ["Admin User", "Warehouse Manager", "Dispatch Operator"][i % 3],
-      module: template.module,
-      action: template.action,
-      entity: template.entity,
-      description: template.desc,
-      status: template.status,
-      ipAddress: `192.168.1.${100 + (i % 20)}`,
-      oldValue: i % 2 === 0 ? { stock: 100 } : undefined,
-      newValue: i % 2 === 0 ? { stock: 150 } : undefined,
-      metadata: { browser: "Chrome 120", os: "Windows 11" }
-    });
-  }
-  
-  return logs;
-};
+function mapToUiAuditLog(dbLog: any): AuditLog {
+  let module: AuditModule = "Inventory";
+  if (dbLog.entityType === 'Customer') module = "Customers";
+  if (dbLog.entityType === 'Challan') module = "Challans";
 
-const mockLogs = generateMockLogs();
+  let action: AuditAction = "Update";
+  if (dbLog.action === 'CREATED') action = "Create";
+  if (dbLog.action === 'IMPORTED') action = "Import";
+  if (dbLog.action === 'APPROVED') action = "Approve";
+  if (dbLog.action === 'DISPATCHED') action = "Dispatch";
+  
+  const desc = `${action} performed on ${dbLog.entityType}`;
+
+  return {
+    id: dbLog.id,
+    timestamp: dbLog.timestamp,
+    user: dbLog.userId || 'System',
+    module,
+    action,
+    entity: dbLog.entityId,
+    description: desc,
+    status: 'Success',
+    ipAddress: '127.0.0.1', // Mocked as DB doesn't store this yet
+    oldValue: dbLog.oldValue,
+    newValue: dbLog.newValue,
+  };
+}
 
 export const auditService = {
   async getAuditLogs(filters?: Partial<AuditFilters>): Promise<AuditLog[]> {
-    await new Promise(resolve => setTimeout(resolve, 400));
-    
-    let filteredLogs = [...mockLogs];
+    const response = await apiClient.get(endpoints.audit.list);
+    let logs = response.data.map(mapToUiAuditLog);
 
     if (filters) {
       if (filters.search) {
         const s = filters.search.toLowerCase();
-        filteredLogs = filteredLogs.filter(log => 
+        logs = logs.filter((log: AuditLog) => 
           log.description.toLowerCase().includes(s) || 
           log.entity.toLowerCase().includes(s) ||
           log.user.toLowerCase().includes(s)
@@ -117,40 +101,41 @@ export const auditService = {
       }
       
       if (filters.module && filters.module !== "All") {
-        filteredLogs = filteredLogs.filter(log => log.module === filters.module);
+        logs = logs.filter((log: AuditLog) => log.module === filters.module);
       }
       
       if (filters.action && filters.action !== "All") {
-        filteredLogs = filteredLogs.filter(log => log.action === filters.action);
+        logs = logs.filter((log: AuditLog) => log.action === filters.action);
       }
       
       if (filters.status && filters.status !== "All") {
-        filteredLogs = filteredLogs.filter(log => log.status === filters.status);
+        logs = logs.filter((log: AuditLog) => log.status === filters.status);
       }
     }
 
-    return filteredLogs;
+    return logs;
   },
 
   async getAuditSummary(): Promise<AuditSummary> {
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const response = await apiClient.get(endpoints.audit.list);
+    const logs = response.data;
+    
     return {
-      todayActivities: 24,
-      inventoryChanges: 8,
-      dispatchOperations: 5,
-      imports: 1,
-      exports: 3
+      todayActivities: logs.length,
+      inventoryChanges: logs.filter((l: any) => l.entityType === 'Product').length,
+      dispatchOperations: logs.filter((l: any) => l.action === 'DISPATCHED').length,
+      imports: logs.filter((l: any) => l.action === 'IMPORTED').length,
+      exports: 0
     };
   },
 
   async getTimeline(): Promise<Record<string, AuditLog[]>> {
-    await new Promise(resolve => setTimeout(resolve, 400));
+    const logs = await this.getAuditLogs();
     
-    // Group logs by relative time (Today, Yesterday, Earlier)
     const grouped: Record<string, AuditLog[]> = {
-      "Today": mockLogs.slice(0, 5),
-      "Yesterday": mockLogs.slice(5, 12),
-      "Earlier": mockLogs.slice(12, 20)
+      "Today": logs.slice(0, 5),
+      "Yesterday": logs.slice(5, 12),
+      "Earlier": logs.slice(12, 20)
     };
     
     return grouped;

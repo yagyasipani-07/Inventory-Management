@@ -17,51 +17,51 @@ export const exportService = {
    * In a real application, this would be an API call with filters.
    */
   async fetchData(config: ExportConfig): Promise<any[]> {
-    // Simulate network delay
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    // Mock response generation based on the dataset
-    const records = [];
-    const count = 50; // Mock 50 rows
-
-    for (let i = 1; i <= count; i++) {
-      if (config.dataset === "Inventory") {
-        records.push({
-          "Product Code": `PRD-${1000 + i}`,
-          "Product Name": `Plywood ${i * 5}mm`,
-          "Thickness": `${i * 5}mm`,
-          "Current Stock": Math.floor(Math.random() * 500),
-          "Reserved Stock": Math.floor(Math.random() * 50),
-          "Status": i % 5 === 0 ? "Low Stock" : "In Stock",
-        });
-      } else if (config.dataset === "Warehouse Stock") {
-        records.push({
-          "Product Code": `PRD-${1000 + i}`,
-          "Zone": ["A", "B", "C", "D"][i % 4],
-          "Rack": `R-${Math.floor(i / 10) + 1}`,
-          "Available Qty": Math.floor(Math.random() * 300),
-          "Total Qty": Math.floor(Math.random() * 400),
-        });
-      } else if (config.dataset === "Customers") {
-        records.push({
-          "Customer Name": `Customer ${i}`,
-          "City": ["Delhi", "Mumbai", "Bangalore"][i % 3],
-          "Transport": `Transport ${i % 5 + 1}`,
-          "Total Challans": Math.floor(Math.random() * 20),
-          "Status": i % 8 === 0 ? "Inactive" : "Active",
-        });
-      } else if (config.dataset === "Dispatch Challans") {
-        records.push({
-          "Challan Number": `CH-${2026}-${1000 + i}`,
-          "Date": new Date().toISOString().slice(0, 10),
-          "Customer": `Customer ${i}`,
-          "Total Items": Math.floor(Math.random() * 10) + 1,
-          "Status": ["Draft", "Approved", "Dispatched"][i % 3],
-        });
-      }
+    const { apiClient, endpoints } = await import('@/src/lib/api');
+    
+    if (config.dataset === "Inventory" || config.dataset === "Warehouse Stock") {
+      const res = await apiClient.get(endpoints.products.list);
+      return res.data.map((p: any) => {
+        if (config.dataset === "Inventory") {
+          return {
+            "Product Code": p.productCode,
+            "Product Name": p.mould || "N/A",
+            "Current Stock": p.currentStock || 0,
+            "Reserved Stock": p.reservedStock || 0,
+            "Available Stock": (p.currentStock || 0) - (p.reservedStock || 0),
+            "Status": ((p.currentStock || 0) - (p.reservedStock || 0)) <= (p.lowStockThreshold || 0) ? "Low Stock" : "In Stock",
+          };
+        } else {
+          return {
+            "Product Code": p.productCode,
+            "Available Qty": (p.currentStock || 0) - (p.reservedStock || 0),
+            "Total Qty": p.currentStock || 0,
+          };
+        }
+      });
+    } 
+    else if (config.dataset === "Customers") {
+      const res = await apiClient.get(endpoints.customers.list);
+      return res.data.map((c: any) => ({
+        "Customer Name": c.name,
+        "City": c.city || "N/A",
+        "Transport": c.preferredTransport || "N/A",
+        "Total Challans": 0, // Not available in list endpoint yet
+        "Status": "Active",
+      }));
+    } 
+    else if (config.dataset === "Dispatch Challans") {
+      const res = await apiClient.get(endpoints.challans.list);
+      return res.data.map((ch: any) => ({
+        "Challan Number": ch.challanNumber,
+        "Date": ch.createdAt ? ch.createdAt.split('T')[0] : "N/A",
+        "Customer": ch.customer?.name || "Unknown",
+        "Total Items": ch.totalQty || 0,
+        "Status": ch.status || "DRAFT",
+      }));
     }
     
-    return records;
+    return [];
   },
 
   /**

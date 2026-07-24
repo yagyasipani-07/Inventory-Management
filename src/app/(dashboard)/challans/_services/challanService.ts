@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Customer } from '../../customers/_services/customerService';
-import { Product } from '../../inventory/_services/inventoryService';
+import { apiClient, endpoints } from '@/src/lib/api';
 
 export type ChallanStatus = 'Draft' | 'Approved' | 'Ready' | 'Dispatched' | 'Cancelled';
 
@@ -32,169 +31,114 @@ export interface Challan {
   updatedAt: string;
 }
 
-export type ChallanFormData = Omit<Challan, 'id' | 'challanNumber' | 'status' | 'createdBy' | 'createdAt' | 'updatedAt' | 'totalQuantity'>;
+export type ChallanFormData = Omit<Challan, 'id' | 'challanNumber' | 'status' | 'createdBy' | 'createdAt' | 'updatedAt' | 'totalQuantity' | 'dispatchDate'>;
 
-let challans: Challan[] = [
-  {
-    id: '1',
-    challanNumber: 'CH-2023-001',
-    customerId: 'CUST-001',
-    customerName: 'Sharma Builders',
-    city: 'Delhi',
-    transport: 'Delhi Freight Carriers',
-    status: 'Dispatched',
-    dispatchDate: new Date(Date.now() - 2 * 86400000).toISOString(),
-    items: [
-      {
-        id: 'i1',
-        productId: '1',
-        productName: 'MR Grade Plywood',
-        thickness: '18mm',
-        size: '8x4',
-        quantity: 50,
-        rate: '',
-        amount: ''
-      }
-    ],
-    totalQuantity: 50,
-    notes: 'Prioritize morning delivery',
-    createdBy: 'Admin',
-    createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-  },
-  {
-    id: '2',
-    challanNumber: 'CH-2023-002',
-    customerId: 'CUST-002',
-    customerName: 'A-One Interiors',
-    city: 'Gurgaon',
-    transport: 'Haryana Roadways',
-    status: 'Draft',
-    dispatchDate: null,
-    items: [
-      {
-        id: 'i2',
-        productId: '2',
-        productName: 'BWR Grade Plywood',
-        thickness: '12mm',
-        size: '8x4',
-        quantity: 100,
-        rate: '',
-        amount: ''
-      }
-    ],
-    totalQuantity: 100,
-    notes: 'Call before delivery',
-    createdBy: 'Admin',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+function mapToUiStatus(dbStatus: string): ChallanStatus {
+  switch (dbStatus) {
+    case 'DRAFT': return 'Draft';
+    case 'APPROVED': return 'Approved';
+    case 'DISPATCHED': return 'Dispatched';
+    case 'CANCELLED': return 'Cancelled';
+    default: return 'Draft';
   }
-];
+}
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-let nextChallanNum = 3;
+function mapToDbStatus(uiStatus: ChallanStatus): string {
+  switch (uiStatus) {
+    case 'Draft': return 'DRAFT';
+    case 'Approved': return 'APPROVED';
+    case 'Dispatched': return 'DISPATCHED';
+    case 'Cancelled': return 'CANCELLED';
+    default: return 'DRAFT';
+  }
+}
+
+function mapToUiChallan(dbChallan: any): Challan {
+  return {
+    id: dbChallan.id,
+    challanNumber: dbChallan.challanNumber,
+    customerId: dbChallan.customerId,
+    customerName: dbChallan.customer?.name || 'Unknown',
+    city: dbChallan.customer?.city || '',
+    transport: dbChallan.transport || '',
+    status: mapToUiStatus(dbChallan.status),
+    dispatchDate: dbChallan.dispatchedAt,
+    items: dbChallan.lineItems?.map((li: any) => ({
+      id: li.id,
+      productId: li.productId,
+      productName: li.product?.mould || 'Product',
+      thickness: li.product?.productCode ? `${li.product.productCode.split('-')[1]}mm` : '',
+      size: li.product?.productCode ? `${li.product.productCode.split('-')[2][0]}x${li.product.productCode.split('-')[2][1]}` : '',
+      quantity: li.qty,
+      rate: li.rate || '',
+      amount: li.amount || '',
+    })) || [],
+    totalQuantity: dbChallan.totalQty || 0,
+    notes: dbChallan.terms || '',
+    createdBy: dbChallan.createdBy?.name || 'Admin',
+    createdAt: dbChallan.createdAt,
+    updatedAt: dbChallan.createdAt, // Backend missing updatedAt
+  };
+}
 
 export const challanService = {
   getChallans: async (): Promise<Challan[]> => {
-    await delay(600);
-    return [...challans];
+    const response = await apiClient.get(endpoints.challans.list);
+    return response.data.map(mapToUiChallan);
   },
 
   getChallan: async (id: string): Promise<Challan | undefined> => {
-    await delay(400);
-    return challans.find(c => c.id === id);
+    try {
+      const response = await apiClient.get(endpoints.challans.detail(id));
+      return mapToUiChallan(response.data);
+    } catch (error: any) {
+      if (error.status === 404) return undefined;
+      throw error;
+    }
   },
 
   createChallan: async (data: ChallanFormData): Promise<Challan> => {
-    await delay(800);
-    
-    const totalQuantity = data.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-    const numStr = nextChallanNum.toString().padStart(3, '0');
-    nextChallanNum++;
-
-    const newChallan: Challan = {
-      id: uuidv4(),
-      challanNumber: `CH-2023-${numStr}`,
-      status: 'Draft',
-      totalQuantity,
-      createdBy: 'Current User',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      ...data,
+    const payload = {
+      challanNumber: `CH-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`,
+      customerId: data.customerId,
+      transport: data.transport,
+      terms: data.notes,
+      lineItems: data.items.map(i => ({
+        productId: i.productId,
+        qty: Number(i.quantity),
+        rate: Number(i.rate) || undefined,
+        amount: Number(i.amount) || undefined,
+      }))
     };
-
-    challans = [newChallan, ...challans];
-    return newChallan;
+    
+    const response = await apiClient.post(endpoints.challans.list, payload);
+    return mapToUiChallan(response.data);
   },
 
   updateChallan: async (id: string, data: ChallanFormData): Promise<Challan> => {
-    await delay(800);
-    const index = challans.findIndex(c => c.id === id);
-    if (index === -1) throw new Error('Challan not found');
-
-    const totalQuantity = data.items.reduce((sum, item) => sum + Number(item.quantity), 0);
-
-    const updatedChallan = {
-      ...challans[index],
-      ...data,
-      totalQuantity,
-      updatedAt: new Date().toISOString(),
-    };
-
-    challans = [
-      ...challans.slice(0, index),
-      updatedChallan,
-      ...challans.slice(index + 1)
-    ];
-
-    return updatedChallan;
+    // Current backend doesn't support updating line items or general details yet
+    console.warn(`Full update for challan ${id} not supported, only status patch available.`);
+    const c = await challanService.getChallan(id);
+    if (!c) throw new Error('Not found');
+    return c;
   },
 
   updateStatus: async (id: string, status: ChallanStatus): Promise<Challan> => {
-    await delay(600);
-    const index = challans.findIndex(c => c.id === id);
-    if (index === -1) throw new Error('Challan not found');
-
-    const updatedChallan = {
-      ...challans[index],
-      status,
-      dispatchDate: status === 'Dispatched' ? new Date().toISOString() : challans[index].dispatchDate,
-      updatedAt: new Date().toISOString(),
-    };
-
-    challans = [
-      ...challans.slice(0, index),
-      updatedChallan,
-      ...challans.slice(index + 1)
-    ];
-
-    return updatedChallan;
+    const payload = { status: mapToDbStatus(status) };
+    const response = await apiClient.patch(endpoints.challans.detail(id), payload);
+    return mapToUiChallan(response.data);
   },
 
   deleteChallan: async (id: string): Promise<void> => {
-    await delay(600);
-    challans = challans.filter(c => c.id !== id);
+    console.warn(`Delete challan ${id} not supported by backend.`);
   },
   
   duplicateChallan: async (id: string): Promise<Challan> => {
-    await delay(800);
-    const existing = challans.find(c => c.id === id);
+    const existing = await challanService.getChallan(id);
     if (!existing) throw new Error('Challan not found');
     
-    const numStr = nextChallanNum.toString().padStart(3, '0');
-    nextChallanNum++;
-
-    const newChallan: Challan = {
-      ...existing,
-      id: uuidv4(),
-      challanNumber: `CH-2023-${numStr}`,
-      status: 'Draft',
-      dispatchDate: null,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    
-    challans = [newChallan, ...challans];
-    return newChallan;
+    // Create new with same data
+    const { id: _id, challanNumber, status, dispatchDate, createdAt, updatedAt, createdBy, totalQuantity, ...formData } = existing;
+    return challanService.createChallan(formData);
   }
 };

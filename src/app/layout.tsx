@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "@/styles/globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { AuthProvider } from "@/src/components/auth/AuthProvider";
+import { NetworkStatus } from "@/src/components/shared/NetworkStatus";
 import { Toaster } from "sonner";
 
 const inter = Inter({
@@ -29,9 +31,11 @@ export default function RootLayout({
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen font-sans">
         <ThemeProvider>
-          <QueryProvider>
-            {children}
-            <Toaster
+          <AuthProvider>
+            <QueryProvider>
+              <NetworkStatus />
+              {children}
+              <Toaster
               position="bottom-right"
               richColors
               closeButton
@@ -40,7 +44,8 @@ export default function RootLayout({
                 style: { borderRadius: "8px" },
               }}
             />
-          </QueryProvider>
+            </QueryProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

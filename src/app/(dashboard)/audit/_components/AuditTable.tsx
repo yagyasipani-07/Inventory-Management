@@ -23,7 +23,7 @@ import { AuditLog } from "../_services/auditService";
 import { EmptyState } from "@/components/shared/empty-state";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import { useMemo } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 export function AuditTable() {
   const { data: logs, isLoading } = useAuditLogs();
@@ -127,7 +127,7 @@ export function AuditTable() {
   });
 
   if (isLoading) {
-    return <LoadingSkeleton variant="table" />;
+    return <LoadingSkeleton />;
   }
 
   if (!logs || logs.length === 0) {
@@ -135,7 +135,7 @@ export function AuditTable() {
       <EmptyState 
         title="No audit records found"
         description="Adjust your filters to see more results."
-        icon="search"
+        icon={Search}
       />
     );
   }

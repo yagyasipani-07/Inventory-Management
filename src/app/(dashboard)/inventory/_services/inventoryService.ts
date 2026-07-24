@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { apiClient, endpoints } from '@/src/lib/api';
 
 export interface Product {
   id: string;
@@ -18,162 +18,85 @@ export interface Product {
   lastUpdated: string;
 }
 
-// Initial mock data
-let mockProducts: Product[] = [
-  {
-    id: '1',
-    code: 'MR-18-84',
-    name: 'MR Grade Plywood',
-    thickness: '18mm',
-    length: '8',
-    width: '4',
-    size: '8x4',
-    currentStock: 450,
-    reservedStock: 50,
-    availableStock: 400,
+// Helper to map DB product to UI product
+function mapToUiProduct(dbProduct: any): Product {
+  const parts = dbProduct.productCode ? dbProduct.productCode.split('-') : [];
+  return {
+    id: dbProduct.id,
+    code: dbProduct.productCode || 'N/A',
+    name: dbProduct.mould || 'Plywood',
+    thickness: parts[1] ? `${parts[1]}mm` : '18mm',
+    length: parts[2] ? parts[2][0] : '8',
+    width: parts[2] ? parts[2][1] : '4',
+    size: parts[2] ? `${parts[2][0]}x${parts[2][1]}` : '8x4',
+    currentStock: dbProduct.currentStock || 0,
+    reservedStock: dbProduct.reservedStock || 0,
+    availableStock: (dbProduct.currentStock || 0) - (dbProduct.reservedStock || 0),
     unit: 'Pieces',
-    openingStock: 500,
-    minStock: 100,
-    description: 'Moisture Resistant Plywood for interior use.',
-    lastUpdated: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    code: 'BWR-12-84',
-    name: 'BWR Grade Plywood',
-    thickness: '12mm',
-    length: '8',
-    width: '4',
-    size: '8x4',
-    currentStock: 85,
-    reservedStock: 10,
-    availableStock: 75,
-    unit: 'Pieces',
-    openingStock: 200,
-    minStock: 100,
-    description: 'Boiling Water Resistant Plywood.',
-    lastUpdated: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    code: 'BWP-19-84',
-    name: 'BWP Marine Grade Plywood',
-    thickness: '19mm',
-    length: '8',
-    width: '4',
-    size: '8x4',
-    currentStock: 25,
-    reservedStock: 5,
-    availableStock: 20,
-    unit: 'Pieces',
-    openingStock: 150,
-    minStock: 50,
-    description: 'Boiling Water Proof Marine Plywood.',
-    lastUpdated: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    code: 'FLUSH-30-84',
-    name: 'Flush Door',
-    thickness: '30mm',
-    length: '8',
-    width: '4',
-    size: '8x4',
-    currentStock: 120,
-    reservedStock: 20,
-    availableStock: 100,
-    unit: 'Pieces',
-    openingStock: 150,
-    minStock: 50,
-    description: 'Solid core flush door.',
-    lastUpdated: new Date().toISOString(),
-  },
-];
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    openingStock: dbProduct.productQty || 0,
+    minStock: dbProduct.lowStockThreshold || 100,
+    description: `Pack Type: ${dbProduct.packType || 'Standard'}`,
+    lastUpdated: dbProduct.createdAt,
+  };
+}
 
 export const inventoryService = {
   async getProducts(): Promise<Product[]> {
-    await delay(600);
-    return [...mockProducts];
+    const response = await apiClient.get(endpoints.products.list);
+    return response.data.map(mapToUiProduct);
   },
 
   async getProductById(id: string): Promise<Product | undefined> {
-    await delay(300);
-    return mockProducts.find((p) => p.id === id);
+    const response = await apiClient.get(endpoints.products.list);
+    const product = response.data.find((p: any) => p.id === id);
+    return product ? mapToUiProduct(product) : undefined;
   },
 
   async createProduct(
     data: Omit<Product, 'id' | 'size' | 'availableStock' | 'lastUpdated' | 'reservedStock' | 'currentStock'>
   ): Promise<Product> {
-    await delay(800);
-    
-    const newProduct: Product = {
-      ...data,
-      id: uuidv4(),
-      size: `${data.length}x${data.width}`,
-      currentStock: data.openingStock,
-      reservedStock: 0,
-      availableStock: data.openingStock,
-      lastUpdated: new Date().toISOString(),
+    const payload = {
+      productCode: data.code,
+      mould: data.name,
+      productQty: data.openingStock,
+      lowStockThreshold: data.minStock,
     };
-
-    mockProducts = [newProduct, ...mockProducts];
-    return newProduct;
+    const response = await apiClient.post(endpoints.products.list, payload);
+    return mapToUiProduct(response.data);
   },
 
   async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
-    await delay(800);
-    
-    const index = mockProducts.findIndex((p) => p.id === id);
-    if (index === -1) throw new Error('Product not found');
-
-    const product = mockProducts[index];
-    const updatedProduct = {
-      ...product,
-      ...data,
-      size: data.length && data.width ? `${data.length}x${data.width}` : product.size,
-      lastUpdated: new Date().toISOString(),
+    // The POST endpoint acts as upsert based on productCode
+    if (!data.code) {
+      throw new Error('Product code is required to update');
+    }
+    const payload = {
+      productCode: data.code,
+      mould: data.name,
+      productQty: data.openingStock,
     };
-    
-    // Recalculate available stock if current or reserved changed
-    updatedProduct.availableStock = updatedProduct.currentStock - updatedProduct.reservedStock;
-
-    mockProducts[index] = updatedProduct;
-    return updatedProduct;
+    const response = await apiClient.post(endpoints.products.list, payload);
+    return mapToUiProduct(response.data);
   },
 
   async deleteProduct(id: string): Promise<void> {
-    await delay(600);
-    mockProducts = mockProducts.filter((p) => p.id !== id);
+    // Delete is not implemented in the current backend route, this is a placeholder
+    console.warn(`Delete product ${id} called, but not supported by backend yet`);
   },
 
   async adjustStock(id: string, type: 'increase' | 'decrease', amount: number, reason: string): Promise<Product> {
-    await delay(800);
-    
-    const index = mockProducts.findIndex((p) => p.id === id);
-    if (index === -1) throw new Error('Product not found');
+    // Get product to find its code first
+    const products = await this.getProducts();
+    const product = products.find(p => p.id === id);
+    if (!product) throw new Error('Product not found');
 
-    const product = mockProducts[index];
-    let newCurrentStock = product.currentStock;
-
-    if (type === 'increase') {
-      newCurrentStock += amount;
-    } else {
-      if (product.currentStock - amount < product.reservedStock) {
-        throw new Error('Cannot decrease stock below reserved amount');
-      }
-      newCurrentStock -= amount;
-    }
-
-    const updatedProduct = {
-      ...product,
-      currentStock: newCurrentStock,
-      availableStock: newCurrentStock - product.reservedStock,
-      lastUpdated: new Date().toISOString(),
+    const adjAmount = type === 'increase' ? amount : -amount;
+    const payload = {
+      productCode: product.code,
+      adjustment: adjAmount,
+      reason,
     };
-
-    mockProducts[index] = updatedProduct;
-    return updatedProduct;
+    const response = await apiClient.post(endpoints.products.list, payload);
+    return mapToUiProduct(response.data);
   },
 };

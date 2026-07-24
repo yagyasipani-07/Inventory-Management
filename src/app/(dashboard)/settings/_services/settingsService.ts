@@ -1,3 +1,5 @@
+import { constants } from '@/src/config';
+
 export interface CompanySettings {
   companyName: string;
   businessName: string;
@@ -43,8 +45,8 @@ export interface UserProfile {
   avatarUrl?: string;
 }
 
-// Mock initial state
-let mockCompanySettings: CompanySettings = {
+// Default initial state
+const defaultCompanySettings: CompanySettings = {
   companyName: "Paras Plywoods",
   businessName: "Paras Plywoods Pvt Ltd",
   gstNumber: "29ABCDE1234F1Z5",
@@ -56,7 +58,7 @@ let mockCompanySettings: CompanySettings = {
   postalCode: "560001",
 };
 
-let mockWarehouseSettings: WarehouseSettings = {
+const defaultWarehouseSettings: WarehouseSettings = {
   warehouseName: "Main Warehouse",
   warehouseCode: "WH-MAIN-01",
   defaultLocation: "Zone A",
@@ -67,7 +69,7 @@ let mockWarehouseSettings: WarehouseSettings = {
   enableStockReservation: false,
 };
 
-let mockPrintSettings: PrintSettings = {
+const defaultPrintSettings: PrintSettings = {
   companyLogo: true,
   companyFooter: true,
   authorizedSignature: true,
@@ -79,7 +81,7 @@ let mockPrintSettings: PrintSettings = {
   showCompanyStampArea: true,
 };
 
-let mockUserProfile: UserProfile = {
+const defaultUserProfile: UserProfile = {
   name: "Admin User",
   email: "admin@parasplywoods.com",
   role: "Administrator",
@@ -87,51 +89,57 @@ let mockUserProfile: UserProfile = {
   lastLogin: new Date().toISOString(),
 };
 
-// Simulate network delay
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+// Local storage helpers
+const STORAGE_KEY = constants.LOCAL_STORAGE_KEYS.USER_SETTINGS;
+
+function getStoredSettings() {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored ? JSON.parse(stored) : null;
+}
+
+function saveSettings(key: string, data: any) {
+  if (typeof window === 'undefined') return;
+  const current = getStoredSettings() || {};
+  current[key] = { ...(current[key] || {}), ...data };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(current));
+  return current[key];
+}
 
 export const settingsService = {
   getCompanySettings: async (): Promise<CompanySettings> => {
-    await delay(300);
-    return { ...mockCompanySettings };
+    const stored = getStoredSettings();
+    return stored?.company || defaultCompanySettings;
   },
   
   updateCompanySettings: async (data: Partial<CompanySettings>): Promise<CompanySettings> => {
-    await delay(500);
-    mockCompanySettings = { ...mockCompanySettings, ...data };
-    return { ...mockCompanySettings };
+    return saveSettings('company', data);
   },
 
   getWarehouseSettings: async (): Promise<WarehouseSettings> => {
-    await delay(300);
-    return { ...mockWarehouseSettings };
+    const stored = getStoredSettings();
+    return stored?.warehouse || defaultWarehouseSettings;
   },
   
   updateWarehouseSettings: async (data: Partial<WarehouseSettings>): Promise<WarehouseSettings> => {
-    await delay(500);
-    mockWarehouseSettings = { ...mockWarehouseSettings, ...data };
-    return { ...mockWarehouseSettings };
+    return saveSettings('warehouse', data);
   },
 
   getPrintSettings: async (): Promise<PrintSettings> => {
-    await delay(300);
-    return { ...mockPrintSettings };
+    const stored = getStoredSettings();
+    return stored?.print || defaultPrintSettings;
   },
   
   updatePrintSettings: async (data: Partial<PrintSettings>): Promise<PrintSettings> => {
-    await delay(500);
-    mockPrintSettings = { ...mockPrintSettings, ...data };
-    return { ...mockPrintSettings };
+    return saveSettings('print', data);
   },
 
   getUserProfile: async (): Promise<UserProfile> => {
-    await delay(300);
-    return { ...mockUserProfile };
+    const stored = getStoredSettings();
+    return stored?.profile || defaultUserProfile;
   },
   
   updateUserProfile: async (data: Partial<UserProfile>): Promise<UserProfile> => {
-    await delay(500);
-    mockUserProfile = { ...mockUserProfile, ...data };
-    return { ...mockUserProfile };
+    return saveSettings('profile', data);
   },
 };
