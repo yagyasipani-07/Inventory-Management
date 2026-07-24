@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -49,7 +49,7 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
 
-  const columns: ColumnDef<Product>[] = [
+  const columns: ColumnDef<Product>[] = useMemo(() => [
     {
       accessorKey: 'code',
       header: 'Code',
@@ -163,7 +163,7 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
         );
       },
     },
-  ];
+  ], [onAdjustStock, onDelete]);
 
   const table = useReactTable({
     data,

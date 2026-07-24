@@ -1,33 +1,87 @@
-# Paras Plywoods — Inventory Management (MVP Phase 1)
+# Paras Plywoods ERP
 
-Scaffolded Phase 1: Next.js + TypeScript + Tailwind + Prisma + Postgres.
+An enterprise-grade, modern ERP system for warehouse and dispatch management, built specifically for the needs of Paras Plywoods.
 
-Quick start (use Supabase remote DB — recommended)
+## Tech Stack
 
-1. Copy `.env.example` to `.env` and set the values. If you use Supabase, set `DATABASE_URL` to your Supabase Postgres connection string and fill `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- **Framework**: Next.js 15 (App Router)
+- **Language**: TypeScript (Strict Mode)
+- **Styling**: Tailwind CSS, shadcn/ui
+- **State Management**: Zustand (Global), TanStack Query (Server State), nuqs (URL State)
+- **Forms**: React Hook Form + Zod
+- **Icons**: Lucide React
+- **Charts**: Recharts
 
-2. Install dependencies and run Prisma generator / migrations against your Supabase database:
+## Architecture
 
-```bash
-npm install
-npx prisma generate
-npx prisma migrate deploy
-npm run dev
+This application is built with a modular architecture within the Next.js App Router paradigm. 
+
+### Key Modules
+
+1. **Dashboard**: High-level KPI overview, stock trends, and recent activity.
+2. **Inventory**: Comprehensive product catalog and stock level management.
+3. **Warehouse**: Live stock visibility and location tracking.
+4. **Customers**: Lightweight directory of dispatch destinations.
+5. **Challans**: The core workflow engine for creating and printing dispatch challans.
+6. **Import/Export**: Bulk data management with validation.
+7. **Audit**: System-wide activity tracking and traceability.
+8. **Settings**: Centralized configuration management.
+
+### Folder Structure
+
+```
+src/
+├── app/
+│   ├── (dashboard)/         # Main authenticated layout group
+│   │   ├── audit/           # Audit Logs module
+│   │   ├── challans/        # Dispatch Challans module
+│   │   ├── customers/       # Customer Management module
+│   │   ├── dashboard/       # Dashboard module
+│   │   ├── export/          # Export Center module
+│   │   ├── import/          # Import Center module
+│   │   ├── inventory/       # Inventory module
+│   │   ├── settings/        # Settings & Admin module
+│   │   └── warehouse/       # Warehouse Stock module
+│   ├── (print)/             # Dedicated layouts for printing
+│   ├── api/                 # Next.js API Routes (BFF layer)
+│   ├── error.tsx            # Global error boundary
+│   └── not-found.tsx        # Global 404 page
+├── components/
+│   ├── shared/              # Reusable complex components (PageHeader, EmptyState, etc.)
+│   └── ui/                  # shadcn/ui base components
+└── lib/                     # Utility functions and configurations
 ```
 
-Notes:
-- This project is scaffolded to use a remote Postgres (Supabase). The included `docker-compose.yml` is optional — only use it if you want a local Postgres instead of Supabase.
-- When using Supabase, prefer `prisma migrate deploy` (applies existing migration files) in CI/remote workflows. `prisma migrate dev` can be used locally if you need to create new migrations against a development database.
+## Getting Started
 
-What I created:
-- Prisma schema and basic models
-- Next.js App Router skeleton (`src/app`)
-- `src/lib/prisma.ts` helper and `src/lib/audit.ts` service hook
-- `.env.example` with Supabase placeholders
+### Prerequisites
+- Node.js (v20+ recommended)
+- npm or pnpm
 
-Next steps I can run for you if you want:
-- Run `npm install` and create/apply migrations here (requires DATABASE_URL to be set)
-- Add Auth (Supabase Auth integration) and initial UI for Products/Challans — basic product CRUD and an `/products` page are scaffolded already.
-- Implement CSV import preview UI
+### Installation
 
-Reply if you want me to run the install and apply migrations now against your Supabase database, or to wire Supabase Auth (signup/signin) into the app next.
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install --legacy-peer-deps
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+4. Build for production:
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## Development Guidelines
+
+- **Component Colocation**: Features should encapsulate their own `_components`, `_hooks`, and `_services` folders. Do not leak feature-specific code into global scopes.
+- **State Management**: Use `TanStack Query` for all server data. Use `Zustand` ONLY for pure client-side UI state that needs to be shared across disparate components.
+- **URL State**: Use `nuqs` (Next Use Query State) for pagination, filtering, and tab selection to ensure shareable URLs.
+- **Strict Typing**: No `any`. Always define proper interfaces or infer them from Zod schemas.
+
+## License
+
+Proprietary - Paras Plywoods

@@ -20,13 +20,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AuditLog } from "../_services/auditService";
+import { EmptyState } from "@/components/shared/empty-state";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
+import { useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export function AuditTable() {
   const { data: logs, isLoading } = useAuditLogs();
   const setSelectedLog = useAuditStore(s => s.setSelectedLog);
 
-  const columns = [
+  const columns = useMemo(() => [
     {
       accessorKey: "timestamp",
       header: "Timestamp",
@@ -109,7 +112,7 @@ export function AuditTable() {
         );
       },
     },
-  ];
+  ], []);
 
   const table = useReactTable({
     data: logs || [],
@@ -124,29 +127,16 @@ export function AuditTable() {
   });
 
   if (isLoading) {
-    return (
-      <div className="rounded-xl border bg-card p-4 shadow-sm">
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex gap-4">
-              <Skeleton className="h-10 w-1/6" />
-              <Skeleton className="h-10 w-1/6" />
-              <Skeleton className="h-10 w-1/6" />
-              <Skeleton className="h-10 w-2/6" />
-              <Skeleton className="h-10 w-1/6" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <LoadingSkeleton variant="table" />;
   }
 
   if (!logs || logs.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border bg-card py-16 shadow-sm">
-        <p className="text-lg font-medium text-foreground">No audit records found.</p>
-        <p className="mt-1 text-sm text-muted-foreground">Adjust your filters to see more results.</p>
-      </div>
+      <EmptyState 
+        title="No audit records found"
+        description="Adjust your filters to see more results."
+        icon="search"
+      />
     );
   }
 

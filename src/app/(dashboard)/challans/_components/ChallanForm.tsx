@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/src/components/ui/button';
@@ -9,6 +9,7 @@ import { Textarea } from '@/src/components/ui/textarea';
 import { Label } from '@/src/components/ui/label';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import { toast } from 'sonner';
+import { LoadingSkeleton } from '@/components/shared/loading-skeleton';
 
 import { useCustomers } from '../../customers/_hooks/useCustomers';
 import { useProducts } from '../../inventory/_hooks/useProducts';
@@ -43,12 +44,12 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
   const [notes, setNotes] = useState(initialData?.notes || '');
 
   // Initialize selected customer if editing
-  useState(() => {
+  useEffect(() => {
     if (initialData && customers.length > 0 && !selectedCustomer) {
       const cust = customers.find(c => c.id === initialData.customerId);
       if (cust) setSelectedCustomer(cust);
     }
-  });
+  }, [initialData, customers, selectedCustomer]);
 
   const isLoading = loadingCustomers || loadingProducts;
 
@@ -94,7 +95,7 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
   };
 
   if (isLoading) {
-    return <div className="flex justify-center p-12">Loading...</div>;
+    return <LoadingSkeleton />;
   }
 
   return (

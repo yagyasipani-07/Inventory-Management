@@ -1,20 +1,29 @@
 'use client';
 
+import React from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { ChallanForm } from "../../_components/ChallanForm";
-import { useChallan } from "../../_hooks/useChallans";
-import { useParams } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import { challanService } from "../../_services/challanService";
+import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
 import Link from "next/link";
 import { Button } from "@/src/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 
-export default function EditChallanPage() {
-  const params = useParams();
-  const id = params.id as string;
-  const { data: challan, isLoading } = useChallan(id);
+export default function EditChallanPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = React.use(params);
+  
+  const { data: challan, isLoading } = useQuery({
+    queryKey: ["challan", id],
+    queryFn: () => challanService.getChallan(id),
+  });
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingSkeleton />;
   }
 
   if (!challan) {

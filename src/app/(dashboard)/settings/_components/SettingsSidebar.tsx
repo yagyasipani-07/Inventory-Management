@@ -57,14 +57,14 @@ export function SettingsSidebar() {
             {section.items.map((item) => (
               <button
                 key={item.id}
-                onClick={() => !item.disabled && setActiveTab(item.id)}
-                disabled={item.disabled}
+                onClick={() => !('disabled' in item && item.disabled) && setActiveTab(item.id)}
+                disabled={'disabled' in item ? (item.disabled as boolean) : false}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-100",
                   activeTab === item.id
                     ? "bg-primary/10 text-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent"
+                  'disabled' in item && item.disabled && "cursor-not-allowed opacity-50 hover:bg-transparent"
                 )}
               >
                 <item.icon
