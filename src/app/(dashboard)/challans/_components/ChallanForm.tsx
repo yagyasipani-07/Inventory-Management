@@ -78,8 +78,7 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
       city: selectedCustomer.city,
       transport: selectedCustomer.preferredTransport || '',
       items,
-      notes,
-      dispatchDate: initialData?.dispatchDate || null
+      notes
     };
 
     try {

@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/providers/theme-provider";
 import { AuthProvider } from "@/src/components/auth/AuthProvider";
 import { NetworkStatus } from "@/src/components/shared/NetworkStatus";
 import { Toaster } from "sonner";
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,7 +35,9 @@ export default function RootLayout({
           <AuthProvider>
             <QueryProvider>
               <NetworkStatus />
-              {children}
+              <NuqsAdapter>
+                {children}
+              </NuqsAdapter>
               <Toaster
               position="bottom-right"
               richColors
