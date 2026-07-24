@@ -1,30 +1,48 @@
-import Link from 'next/link'
-import './globals.css'
-import { AuthGate } from './components/AuthGate'
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "@/styles/globals.css";
+import { QueryProvider } from "@/components/providers/query-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Toaster } from "sonner";
 
-export const metadata = {
-  title: 'Paras Plywoods',
-  description: 'Inventory management MVP',
-}
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export const metadata: Metadata = {
+  title: {
+    default: "Paras Plywoods — Inventory ERP",
+    template: "%s | Paras Plywoods",
+  },
+  description:
+    "Production-quality ERP Inventory Management System for Paras Plywoods warehouse operations.",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <html lang="en">
-      <body>
-        <nav style={{ borderBottom: '1px solid #e5e7eb', padding: '12px 24px', display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-          <strong>Paras Plywoods</strong>
-          <Link href="/">Dashboard</Link>
-          <Link href="/products">Products</Link>
-          <Link href="/customers">Customers</Link>
-          <Link href="/challans">Challans</Link>
-          <Link href="/purchases">Purchases</Link>
-          <Link href="/suppliers">Suppliers</Link>
-          <Link href="/import">Import</Link>
-          <Link href="/audit">Audit</Link>
-          <Link href="/login">Login</Link>
-        </nav>
-        <AuthGate>{children}</AuthGate>
+    <html lang="en" className={inter.variable} suppressHydrationWarning>
+      <body className="min-h-screen font-sans">
+        <ThemeProvider>
+          <QueryProvider>
+            {children}
+            <Toaster
+              position="bottom-right"
+              richColors
+              closeButton
+              toastOptions={{
+                duration: 4000,
+                style: { borderRadius: "8px" },
+              }}
+            />
+          </QueryProvider>
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

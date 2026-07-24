@@ -4,16 +4,31 @@ import { logAudit } from '@/src/lib/audit'
 
 export const dynamic = 'force-dynamic';
 
-export async function PATCH(request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const challan = await prisma.challan.findUnique({
+      where: { id },
+      include: { customer: true, lineItems: { include: { product: true } }, createdBy: true, approvedBy: true },
+    })
+    if (!challan) return NextResponse.json({ error: 'Challan not found' }, { status: 404 })
+    return NextResponse.json(challan)
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to fetch challan', details: String(error) }, { status: 500 })
+  }
+}
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const body = await request.json()
-  const challan = await prisma.challan.findUnique({ where: { id: params.id } })
+  const { id } = await params;
+  const challan = await prisma.challan.findUnique({ where: { id } })
   if (!challan) return NextResponse.json({ error: 'Challan not found' }, { status: 404 })
 
   let status = challan.status
   if (body.status) status = body.status
 
   if (status === 'APPROVED' && challan.status === 'DRAFT') {
-    const items = await prisma.challanLineItem.findMany({ where: { challanId: params.id } })
+    const items = await prisma.challanLineItem.findMany({ where: { challanId: id } })
     for (const item of items) {
       await prisma.product.update({
         where: { id: item.productId },
@@ -23,7 +38,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   if (status === 'DISPATCHED' && challan.status === 'APPROVED') {
-    const items = await prisma.challanLineItem.findMany({ where: { challanId: params.id } })
+    const items = await prisma.challanLineItem.findMany({ where: { challanId: id } })
     for (const item of items) {
       await prisma.product.update({
         where: { id: item.productId },
@@ -36,7 +51,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   const updated = await prisma.challan.update({
-    where: { id: params.id },
+    where: { id },
     data: {
       status,
       approvedAt: body.status === 'APPROVED' ? new Date() : challan.approvedAt,

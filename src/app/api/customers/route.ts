@@ -10,7 +10,7 @@ export async function GET() {
     return NextResponse.json(customers)
   } catch (error) {
     console.error('Failed to load customers:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ error: 'Failed to load customers', details: String(error) }, { status: 500 })
   }
 }
 

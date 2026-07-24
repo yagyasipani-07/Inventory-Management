@@ -5,11 +5,14 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const challans = await prisma.challan.findMany({ orderBy: { createdAt: 'desc' }, include: { customer: true, lineItems: true } })
+    const challans = await prisma.challan.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: { customer: true, lineItems: { include: { product: true } } },
+    })
     return NextResponse.json(challans)
   } catch (error) {
     console.error('Failed to load challans:', error)
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json({ error: 'Failed to load challans', details: String(error) }, { status: 500 })
   }
 }
 
@@ -18,6 +21,19 @@ export async function POST(request: Request) {
     const body = await request.json()
     const lineItems = Array.isArray(body?.lineItems) ? body.lineItems : []
     const totalQty = lineItems.reduce((sum: number, item: any) => sum + Number(item.qty || 0), 0)
+    const createdById = body.createdById ?? 'demo-user'
+
+    // Ensure creator user exists in database to satisfy foreign key relation
+    await prisma.user.upsert({
+      where: { id: createdById },
+      update: {},
+      create: {
+        id: createdById,
+        email: `${createdById}@parasplywoods.com`,
+        name: 'Demo User',
+        role: 'WAREHOUSE_MANAGER',
+      },
+    })
 
     const challan = await prisma.challan.create({
       data: {
@@ -31,7 +47,7 @@ export async function POST(request: Request) {
         terms: body.terms ?? null,
         checkedBy: body.checkedBy ?? null,
         authorisedBy: body.authorisedBy ?? null,
-        createdById: body.createdById ?? 'demo-user',
+        createdById,
         lineItems: {
           create: lineItems.map((item: any) => ({
             productId: item.productId,
@@ -45,6 +61,6 @@ export async function POST(request: Request) {
     return NextResponse.json(challan, { status: 201 })
   } catch (error) {
     console.error('Failed to create challan:', error)
-    return NextResponse.json({ error: 'Unable to create challan' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to create challan', details: String(error) }, { status: 500 })
   }
 }

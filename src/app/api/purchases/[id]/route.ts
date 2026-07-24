@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/src/lib/prisma'
 import { logAudit } from '@/src/lib/audit'
-import { addFallbackPurchaseLineItem, receiveFallbackPurchase } from '@/src/lib/fallbackStore'
+
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const purchase = await prisma.purchase.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { supplier: true, lineItems: { include: { product: true } } },
     })
 
@@ -22,24 +23,17 @@ export async function GET(_request: Request, { params }: { params: { id: string 
   }
 }
 
-export async function POST(request: Request, { params }: { params: { id: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const body = await request.json().catch(() => null)
 
   try {
+    const { id } = await params;
     const purchase = await prisma.purchase.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { lineItems: true },
     })
 
     if (!purchase) {
-      if (body?.action === 'add-line-item') {
-        const lineItem = addFallbackPurchaseLineItem(params.id, { productId: body.productId, qty: body.qty, unitCost: body.unitCost, productCode: body.productCode })
-        return NextResponse.json(lineItem, { status: 201 })
-      }
-      if (body?.action === 'receive') {
-        const updated = receiveFallbackPurchase(params.id, body.receivedBy)
-        return NextResponse.json(updated ?? { ok: true })
-      }
       return NextResponse.json({ error: 'Purchase not found' }, { status: 404 })
     }
 
