@@ -86,7 +86,7 @@ const generateMockLogs = (): AuditLog[] => {
       module: template.module,
       action: template.action,
       entity: template.entity,
-      description: template.description,
+      description: template.desc,
       status: template.status,
       ipAddress: `192.168.1.${100 + (i % 20)}`,
       oldValue: i % 2 === 0 ? { stock: 100 } : undefined,
