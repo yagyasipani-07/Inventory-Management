@@ -1,57 +1,60 @@
-import { PageHeader } from "@/components/shared/page-header";
-import { SectionCard } from "@/components/shared/section-card";
-import { Settings as SettingsIcon } from "lucide-react";
+"use client";
 
-export const metadata = { title: "Settings" };
+import { Suspense } from "react";
+import { useQueryState } from "nuqs";
+import { SettingsHeader } from "./_components/SettingsHeader";
+import { SettingsSidebar } from "./_components/SettingsSidebar";
+import { CompanySettings } from "./_components/CompanySettings";
+import { WarehouseSettings } from "./_components/WarehouseSettings";
+import { PrintSettings } from "./_components/PrintSettings";
+import { AppearanceSettings } from "./_components/AppearanceSettings";
+import { ProfileSettings } from "./_components/ProfileSettings";
+import { SecuritySettings } from "./_components/SecuritySettings";
+import { AboutSettings } from "./_components/AboutSettings";
+
+function SettingsContent() {
+  const [activeTab] = useQueryState("tab", { defaultValue: "company" });
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "company":
+        return <CompanySettings />;
+      case "warehouse":
+        return <WarehouseSettings />;
+      case "printing":
+        return <PrintSettings />;
+      case "appearance":
+        return <AppearanceSettings />;
+      case "profile":
+        return <ProfileSettings />;
+      case "security":
+        return <SecuritySettings />;
+      case "about":
+        return <AboutSettings />;
+      default:
+        return <CompanySettings />;
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-8 lg:flex-row lg:gap-12">
+      <SettingsSidebar />
+      <div className="flex-1 overflow-x-hidden">
+        <div className="mx-auto max-w-4xl">
+          {renderContent()}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Settings"
-        description="Application configuration and preferences"
-      />
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <SectionCard title="Company Profile" description="Your business details">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Company Name</span>
-              <span className="font-medium text-foreground">Paras Plywoods</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Business Type</span>
-              <span className="font-medium text-foreground">
-                Plywood &amp; Timber Wholesale
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Currency</span>
-              <span className="font-medium text-foreground">INR (₹)</span>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard
-          title="System Preferences"
-          description="Application behavior settings"
-        >
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Default Page Size</span>
-              <span className="font-medium text-foreground">25 rows</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Date Format</span>
-              <span className="font-medium text-foreground">DD MMM YYYY</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Auto-save</span>
-              <span className="font-medium text-foreground">Enabled</span>
-            </div>
-          </div>
-        </SectionCard>
-      </div>
+    <div className="flex flex-col gap-8 p-6">
+      <SettingsHeader />
+      <Suspense fallback={<div className="h-96 w-full animate-pulse rounded-lg bg-muted" />}>
+        <SettingsContent />
+      </Suspense>
     </div>
   );
 }
