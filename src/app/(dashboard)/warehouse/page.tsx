@@ -1,8 +1,7 @@
 import { PageHeader } from "@/components/shared/page-header";
-import { EmptyState } from "@/components/shared/empty-state";
-import { Warehouse as WarehouseIcon } from "lucide-react";
+import { WarehouseClient } from "./_components/WarehouseClient";
 
-export const metadata = { title: "Warehouse" };
+export const metadata = { title: "Warehouse | Paras Plywoods ERP" };
 
 export default function WarehousePage() {
   return (
@@ -11,12 +10,8 @@ export default function WarehousePage() {
         title="Warehouse Stock"
         description="Live warehouse stock management and rack-level tracking"
       />
-
-      <EmptyState
-        icon={WarehouseIcon}
-        title="No warehouse data"
-        description="Warehouse stock levels will appear here once products are added to inventory and stock is allocated to your warehouse locations."
-      />
+      
+      <WarehouseClient />
     </div>
   );
 }
