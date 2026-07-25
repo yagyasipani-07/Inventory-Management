@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { features } from '@/src/config';
+import { featuresConfig } from '@/src/config';
 import { Role } from '@/src/lib/auth/permissions';
 
 interface User {
@@ -30,7 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Placeholder logic for auth.
     // When real auth is implemented, this will fetch the user session.
-    if (features.enableAuth) {
+    if (featuresConfig.enableAuthentication) {
       // Simulate auth check
       setTimeout(() => {
         setIsLoading(false);

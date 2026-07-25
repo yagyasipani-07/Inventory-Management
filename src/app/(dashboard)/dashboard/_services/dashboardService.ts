@@ -1,6 +1,5 @@
+import { createBrowserClient } from '@/lib/supabase/browser';
 import { useQuery } from '@tanstack/react-query';
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export type DashboardStats = {
   totalProducts: number;
@@ -34,7 +33,7 @@ export type RecentChallan = {
   customer: string;
   date: string;
   items: number;
-  status: 'Draft' | 'Approved' | 'Printed' | 'Dispatched';
+  status: 'Draft' | 'Approved' | 'Printed' | 'Dispatched' | 'Cancelled';
 };
 
 export type RecentActivity = {
@@ -45,64 +44,99 @@ export type RecentActivity = {
   type: 'Inventory' | 'Challan' | 'System' | 'Customer';
 };
 
+const getClient = () => createBrowserClient();
+
 export const dashboardService = {
   getDashboardStats: async (): Promise<DashboardStats> => {
-    await delay(600);
+    const supabase = getClient();
+    
+    // Total Products
+    const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+    
+    // Low Stock (using warehouse_stock view logic)
+    const { count: lowStockCount } = await supabase.from('warehouse_stock').select('*', { count: 'exact', head: true }).lt('current_quantity', 10);
+    
+    // Today's Dispatch
+    const today = new Date().toISOString().split('T')[0];
+    const { count: dispatchCount } = await supabase.from('challans').select('*', { count: 'exact', head: true }).eq('dispatch_date', today);
+
     return {
-      totalProducts: 524,
-      totalProductsTrend: 2.4,
-      currentStockValue: 4285000,
-      currentStockValueTrend: 1.2,
-      todaysDispatch: 18,
-      todaysDispatchTrend: -5.0,
-      lowStockItems: 11,
-      lowStockItemsTrend: 15.0,
+      totalProducts: productCount || 0,
+      totalProductsTrend: 0, // Requires historical snapshot
+      currentStockValue: 0, // No price on products yet
+      currentStockValueTrend: 0,
+      todaysDispatch: dispatchCount || 0,
+      todaysDispatchTrend: 0,
+      lowStockItems: lowStockCount || 0,
+      lowStockItemsTrend: 0,
     };
   },
 
   getInventoryTrend: async (): Promise<InventoryTrend[]> => {
-    await delay(700);
-    // Generate last 30 days of mock data
-    return Array.from({ length: 30 }).map((_, i) => {
+    // Generate empty/mock trend until historical snapshots table exists
+    return Array.from({ length: 7 }).map((_, i) => {
       const date = new Date();
-      date.setDate(date.getDate() - (29 - i));
+      date.setDate(date.getDate() - (6 - i));
       return {
         date: date.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }),
-        incoming: Math.floor(Math.random() * 500) + 100,
-        outgoing: Math.floor(Math.random() * 600) + 50,
+        incoming: 0,
+        outgoing: 0,
       };
     });
   },
 
   getLowStockProducts: async (): Promise<LowStockProduct[]> => {
-    await delay(500);
-    return [
-      { id: '1', code: 'PRD-001', name: '18mm Commercial Plywood', currentStock: 12, minimumStock: 50, status: 'Critical' },
-      { id: '2', code: 'PRD-045', name: '12mm Marine Plywood', currentStock: 25, minimumStock: 30, status: 'Warning' },
-      { id: '3', code: 'PRD-112', name: 'Fevicol SH 5kg', currentStock: 5, minimumStock: 20, status: 'Critical' },
-      { id: '4', code: 'PRD-089', name: 'Teak Wood Veneer 4x8', currentStock: 18, minimumStock: 25, status: 'Warning' },
-      { id: '5', code: 'PRD-034', name: 'Edge Banding Tape White', currentStock: 2, minimumStock: 15, status: 'Critical' },
-    ];
+    const supabase = getClient();
+    const { data } = await supabase.from('warehouse_stock').select('*, products(product_code, product_name)').lt('current_quantity', 20).limit(5);
+    
+    return (data || []).map((item: any) => ({
+      id: item.product_id,
+      code: item.products?.product_code || 'N/A',
+      name: item.products?.product_name || 'N/A',
+      currentStock: item.current_quantity,
+      minimumStock: item.reorder_level || 20,
+      status: item.current_quantity < 10 ? 'Critical' : 'Warning'
+    }));
   },
 
   getRecentChallans: async (): Promise<RecentChallan[]> => {
-    await delay(800);
-    return [
-      { id: '1', challanNo: 'CH-2023-1042', customer: 'Sharma Interiors', date: new Date().toISOString(), items: 14, status: 'Dispatched' },
-      { id: '2', challanNo: 'CH-2023-1043', customer: 'Verma Builders', date: new Date().toISOString(), items: 5, status: 'Printed' },
-      { id: '3', challanNo: 'CH-2023-1044', customer: 'Gupta & Sons', date: new Date().toISOString(), items: 22, status: 'Approved' },
-      { id: '4', challanNo: 'CH-2023-1045', customer: 'Modern Woodworks', date: new Date().toISOString(), items: 8, status: 'Draft' },
-    ];
+    const supabase = getClient();
+    const { data } = await supabase.from('challans')
+      .select('id, challan_number, created_at, status, customers(customer_name), challan_items(quantity)')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    return (data || []).map((c: any) => ({
+      id: c.id,
+      challanNo: c.challan_number,
+      customer: c.customers?.customer_name || 'Unknown',
+      date: c.created_at,
+      items: c.challan_items?.reduce((acc: number, cur: any) => acc + (cur.quantity || 0), 0) || 0,
+      status: c.status as any
+    }));
   },
 
   getRecentActivity: async (): Promise<RecentActivity[]> => {
-    await delay(400);
-    return [
-      { id: '1', title: 'Inventory Updated', description: 'Received 50 units of 18mm Commercial Plywood', time: '2 mins ago', type: 'Inventory' },
-      { id: '2', title: 'New Challan Created', description: 'CH-2023-1045 created by Admin', time: '15 mins ago', type: 'Challan' },
-      { id: '3', title: 'Excel Imported', description: 'Bulk product update (145 records)', time: '1 hour ago', type: 'System' },
-      { id: '4', title: 'Customer Added', description: 'Modern Woodworks onboarded', time: 'Yesterday', type: 'Customer' },
-    ];
+    const supabase = getClient();
+    const { data } = await supabase.from('audit_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    return (data || []).map((log: any) => {
+      let type: 'Inventory' | 'Challan' | 'System' | 'Customer' = 'System';
+      if (log.entity === 'Product') type = 'Inventory';
+      else if (log.entity === 'Challan') type = 'Challan';
+      else if (log.entity === 'Customer') type = 'Customer';
+      
+      return {
+        id: log.id,
+        title: `${log.action} ${log.entity}`,
+        description: log.description || '',
+        time: log.created_at,
+        type
+      };
+    });
   }
 };
 

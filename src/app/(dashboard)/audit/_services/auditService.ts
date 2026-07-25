@@ -1,4 +1,5 @@
-import { apiClient, endpoints } from '@/src/lib/api';
+import { AuditService as RealAuditService } from '@/features/audit/service';
+import { createBrowserClient } from '@/lib/supabase/browser';
 
 export type AuditAction = 
   | "Create" 
@@ -27,7 +28,7 @@ export type AuditStatus = "Success" | "Warning" | "Failed" | "Pending";
 
 export interface AuditLog {
   id: string;
-  timestamp: string; // ISO String
+  timestamp: string;
   user: string;
   module: AuditModule;
   action: AuditAction;
@@ -57,87 +58,48 @@ export interface AuditFilters {
   search: string;
 }
 
+const getService = () => new RealAuditService(createBrowserClient());
+
 function mapToUiAuditLog(dbLog: any): AuditLog {
-  let module: AuditModule = "Inventory";
-  if (dbLog.entityType === 'Customer') module = "Customers";
-  if (dbLog.entityType === 'Challan') module = "Challans";
-
-  let action: AuditAction = "Update";
-  if (dbLog.action === 'CREATED') action = "Create";
-  if (dbLog.action === 'IMPORTED') action = "Import";
-  if (dbLog.action === 'APPROVED') action = "Approve";
-  if (dbLog.action === 'DISPATCHED') action = "Dispatch";
-  
-  const desc = `${action} performed on ${dbLog.entityType}`;
-
   return {
     id: dbLog.id,
-    timestamp: dbLog.timestamp,
-    user: dbLog.userId || 'System',
-    module,
-    action,
-    entity: dbLog.entityId,
-    description: desc,
+    timestamp: dbLog.created_at,
+    user: dbLog.user_profiles?.name || 'System',
+    module: "Inventory", // Fallback for UI 
+    action: dbLog.action as AuditAction,
+    entity: dbLog.entity,
+    description: dbLog.description || '',
     status: 'Success',
-    ipAddress: '127.0.0.1', // Mocked as DB doesn't store this yet
-    oldValue: dbLog.oldValue,
-    newValue: dbLog.newValue,
+    ipAddress: '127.0.0.1', 
+    metadata: dbLog.metadata,
   };
 }
 
 export const auditService = {
   async getAuditLogs(filters?: Partial<AuditFilters>): Promise<AuditLog[]> {
-    const response = await apiClient.get(endpoints.audit.list);
-    let logs = response.data.map(mapToUiAuditLog);
-
-    if (filters) {
-      if (filters.search) {
-        const s = filters.search.toLowerCase();
-        logs = logs.filter((log: AuditLog) => 
-          log.description.toLowerCase().includes(s) || 
-          log.entity.toLowerCase().includes(s) ||
-          log.user.toLowerCase().includes(s)
-        );
-      }
-      
-      if (filters.module && filters.module !== "All") {
-        logs = logs.filter((log: AuditLog) => log.module === filters.module);
-      }
-      
-      if (filters.action && filters.action !== "All") {
-        logs = logs.filter((log: AuditLog) => log.action === filters.action);
-      }
-      
-      if (filters.status && filters.status !== "All") {
-        logs = logs.filter((log: AuditLog) => log.status === filters.status);
-      }
-    }
-
-    return logs;
+    const service = getService();
+    const { data } = await service.getAuditLogs({
+      search: filters?.search,
+    });
+    return data.map(mapToUiAuditLog);
   },
 
   async getAuditSummary(): Promise<AuditSummary> {
-    const response = await apiClient.get(endpoints.audit.list);
-    const logs = response.data;
-    
+    const logs = await this.getAuditLogs();
     return {
       todayActivities: logs.length,
-      inventoryChanges: logs.filter((l: any) => l.entityType === 'Product').length,
-      dispatchOperations: logs.filter((l: any) => l.action === 'DISPATCHED').length,
-      imports: logs.filter((l: any) => l.action === 'IMPORTED').length,
+      inventoryChanges: logs.filter((l) => l.action === 'Update').length,
+      dispatchOperations: logs.filter((l) => l.action === 'Dispatch').length,
+      imports: logs.filter((l) => l.action === 'Import').length,
       exports: 0
     };
   },
 
   async getTimeline(): Promise<Record<string, AuditLog[]>> {
     const logs = await this.getAuditLogs();
-    
-    const grouped: Record<string, AuditLog[]> = {
-      "Today": logs.slice(0, 5),
-      "Yesterday": logs.slice(5, 12),
-      "Earlier": logs.slice(12, 20)
+    return {
+      "Recent": logs.slice(0, 10),
+      "Earlier": logs.slice(10, 20)
     };
-    
-    return grouped;
   }
 };

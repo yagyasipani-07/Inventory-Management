@@ -1,107 +1,85 @@
-import { apiClient, endpoints } from '@/src/lib/api';
+import { InventoryService } from '@/features/inventory/service';
+import { createBrowserClient } from '@/lib/supabase/browser';
+import { Product as DBProduct } from '@/features/inventory/types';
 
-export interface Product {
-  id: string;
-  code: string;
-  name: string;
-  photoUrl?: string;
-  thickness: string;
-  length: string;
-  width: string;
-  size: string;
-  currentStock: number;
-  reservedStock: number;
-  availableStock: number;
-  unit: string;
-  openingStock: number;
-  minStock: number;
-  description?: string;
-  lastUpdated: string;
-}
+export type Product = ReturnType<typeof mapToUiProduct>;
 
-// Helper to map DB product to UI product
-function mapToUiProduct(dbProduct: any): Product {
-  const parts = dbProduct.productCode ? dbProduct.productCode.split('-') : [];
+// Map database product to the UI product structure expected by components
+function mapToUiProduct(dbProduct: DBProduct) {
   return {
     id: dbProduct.id,
-    code: dbProduct.productCode || 'N/A',
-    name: dbProduct.mould || 'Plywood',
-    photoUrl: dbProduct.photoUrl || '',
-    thickness: parts[1] ? `${parts[1]}mm` : '18mm',
-    length: parts[2]?.[0] || '8',
-    width: parts[2]?.[1] || '4',
-    size: parts[2] && parts[2].length >= 2 ? `${parts[2][0]}x${parts[2][1]}` : '8x4',
-    currentStock: dbProduct.currentStock || 0,
-    reservedStock: dbProduct.reservedStock || 0,
-    availableStock: Math.max(0, (dbProduct.currentStock || 0) - (dbProduct.reservedStock || 0)),
-    unit: 'Pieces',
-    openingStock: dbProduct.productQty || 0,
-    minStock: dbProduct.lowStockThreshold || 100,
-    description: `Pack Type: ${dbProduct.packType || 'Standard'}`,
-    lastUpdated: dbProduct.createdAt || new Date().toISOString(),
+    code: dbProduct.product_code || 'N/A',
+    name: dbProduct.product_name || 'Plywood',
+    photoUrl: dbProduct.product_image_path || '',
+    thickness: dbProduct.thickness ? `${dbProduct.thickness}mm` : '18mm',
+    length: dbProduct.length ? dbProduct.length.toString() : '8',
+    width: dbProduct.width ? dbProduct.width.toString() : '4',
+    size: (dbProduct.length && dbProduct.width) ? `${dbProduct.length}x${dbProduct.width}` : '8x4',
+    currentStock: 0, // Should be fetched from warehouse_stock
+    reservedStock: 0,
+    availableStock: 0,
+    unit: dbProduct.unit || 'Pieces',
+    openingStock: 0,
+    minStock: 100,
+    description: dbProduct.description || '',
+    lastUpdated: dbProduct.updated_at || new Date().toISOString(),
   };
 }
 
+// Create a singleton service instance using the browser client
+const getService = () => new InventoryService(createBrowserClient());
+
 export const inventoryService = {
-  async getProducts(): Promise<Product[]> {
-    const response = await apiClient.get(endpoints.products.list);
-    return response.data.map(mapToUiProduct);
+  async getProducts() {
+    const service = getService();
+    const { data } = await service.getProducts({});
+    return data.map(mapToUiProduct);
   },
 
-  async getProductById(id: string): Promise<Product | undefined> {
-    const response = await apiClient.get(endpoints.products.list);
-    const product = response.data.find((p: any) => p.id === id);
+  async getProductById(id: string) {
+    const service = getService();
+    const product = await service.getProduct(id);
     return product ? mapToUiProduct(product) : undefined;
   },
 
-  async createProduct(
-    data: Omit<Product, 'id' | 'size' | 'availableStock' | 'lastUpdated' | 'reservedStock' | 'currentStock'>
-  ): Promise<Product> {
-    const payload = {
-      productCode: data.code,
-      mould: data.name,
-      photoUrl: data.photoUrl,
-      productQty: data.openingStock,
-      lowStockThreshold: data.minStock,
-    };
-    const response = await apiClient.post(endpoints.products.list, payload);
-    return mapToUiProduct(response.data);
+  async createProduct(data: any) {
+    const service = getService();
+    const product = await service.createProduct({
+      product_code: data.code,
+      product_name: data.name,
+      product_image_path: data.photoUrl,
+      thickness: parseFloat(data.thickness) || null,
+      length: parseFloat(data.length) || null,
+      width: parseFloat(data.width) || null,
+      active_status: true,
+      description: data.description || null,
+      brand: data.brand || null,
+      category: data.category || null,
+      unit: data.unit || 'Pieces'
+    });
+    return mapToUiProduct(product);
   },
 
-  async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
-    // The POST endpoint acts as upsert based on productCode
-    if (!data.code) {
-      throw new Error('Product code is required to update');
-    }
-    const payload = {
-      productCode: data.code,
-      mould: data.name,
-      photoUrl: data.photoUrl,
-      productQty: data.openingStock,
-      lowStockThreshold: data.minStock,
-    };
-    const response = await apiClient.post(endpoints.products.list, payload);
-    return mapToUiProduct(response.data);
+  async updateProduct(id: string, data: any) {
+    const service = getService();
+    const product = await service.updateProduct(id, {
+      product_code: data.code,
+      product_name: data.name,
+      product_image_path: data.photoUrl,
+      description: data.description,
+    });
+    return mapToUiProduct(product);
   },
 
-  async deleteProduct(id: string): Promise<void> {
-    // Delete is not implemented in the current backend route, this is a placeholder
-    console.warn(`Delete product ${id} called, but not supported by backend yet`);
+  async deleteProduct(id: string) {
+    const service = getService();
+    await service.deleteProduct(id);
   },
 
-  async adjustStock(id: string, type: 'increase' | 'decrease', amount: number, reason: string): Promise<Product> {
-    // Get product to find its code first
-    const products = await this.getProducts();
-    const product = products.find(p => p.id === id);
-    if (!product) throw new Error('Product not found');
-
-    const adjAmount = type === 'increase' ? amount : -amount;
-    const payload = {
-      productCode: product.code,
-      adjustment: adjAmount,
-      reason,
-    };
-    const response = await apiClient.post(endpoints.products.list, payload);
-    return mapToUiProduct(response.data);
+  async adjustStock(id: string, type: 'increase' | 'decrease', amount: number, reason: string) {
+    // Stock adjustment should be handled via the Warehouse service
+    // For now, this is a stub as per Phase 3 rules (Workflows are in Phase 4)
+    console.warn("Stock adjustment moved to Warehouse Service workflows.");
+    return {} as any;
   },
 };

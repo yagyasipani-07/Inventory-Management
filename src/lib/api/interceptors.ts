@@ -8,7 +8,7 @@ export function setupInterceptors(axiosInstance: AxiosInstance) {
     (config: InternalAxiosRequestConfig) => {
       // Setup Auth Token if we implement real auth later
       if (typeof window !== 'undefined') {
-        const token = localStorage.getItem(constants.LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+        const token = localStorage.getItem('auth_token');
         if (token && config.headers) {
           config.headers.Authorization = `Bearer ${token}`;
         }
@@ -39,7 +39,7 @@ export function setupInterceptors(axiosInstance: AxiosInstance) {
         // Handle Unauthorized
         // e.g. dispatch event to clear local storage and redirect to login
         if (typeof window !== 'undefined') {
-           localStorage.removeItem(constants.LOCAL_STORAGE_KEYS.AUTH_TOKEN);
+           localStorage.removeItem('auth_token');
            // window.location.href = '/login'; // Un-comment when auth is implemented
         }
         throw new UnauthorizedError(message);

@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { printPdfReport } from "@/src/lib/export/printPdf";
+import { createBrowserClient } from '@/lib/supabase/browser';
 
 export type ExportFormat = "csv" | "excel" | "pdf";
 export type ExportDataset = "Inventory" | "Warehouse Stock" | "Customers" | "Dispatch Challans";
@@ -12,59 +13,55 @@ export interface ExportConfig {
   status: string | null;
 }
 
+const getClient = () => createBrowserClient();
+
 export const exportService = {
-  /**
-   * Generates mock data for export based on the selected dataset.
-   * In a real application, this would be an API call with filters.
-   */
   async fetchData(config: ExportConfig): Promise<any[]> {
-    const { apiClient, endpoints } = await import('@/src/lib/api');
+    const supabase = getClient();
     
     if (config.dataset === "Inventory" || config.dataset === "Warehouse Stock") {
-      const res = await apiClient.get(endpoints.products.list);
-      return res.data.map((p: any) => {
+      const { data } = await supabase.from('warehouse_stock').select('*, products(*)');
+      return (data || []).map((p: any) => {
         if (config.dataset === "Inventory") {
           return {
-            "Product Code": p.productCode,
-            "Product Name": p.mould || "N/A",
-            "Current Stock": p.currentStock || 0,
-            "Available Stock": (p.currentStock || 0) - (p.reservedStock || 0),
+            "Product Code": p.products?.product_code,
+            "Product Name": p.products?.product_name || "N/A",
+            "Current Stock": p.current_quantity || 0,
+            "Available Stock": (p.current_quantity || 0) - (p.reserved_quantity || 0),
           };
         } else {
           return {
-            "Product Code": p.productCode,
-            "Available Qty": (p.currentStock || 0) - (p.reservedStock || 0),
-            "Total Qty": p.currentStock || 0,
+            "Product Code": p.products?.product_code,
+            "Warehouse": "Main Warehouse", // Hardcoded for now
+            "Available Qty": (p.current_quantity || 0) - (p.reserved_quantity || 0),
+            "Total Qty": p.current_quantity || 0,
           };
         }
       });
     } 
     else if (config.dataset === "Customers") {
-      const res = await apiClient.get(endpoints.customers.list);
-      return res.data.map((c: any) => ({
-        "Customer Name": c.name,
-        "City": c.city || "N/A",
-        "Customer Number": c.phone || "N/A",
-        "Total Challans": 0, // Not available in list endpoint yet
+      const { data } = await supabase.from('customers').select('*');
+      return (data || []).map((c: any) => ({
+        "Customer Name": c.customer_name,
+        "Customer Number": c.customer_number || "N/A",
+        "Phone": c.phone || "N/A",
+        "Total Challans": 0, // Need aggregation query for this
       }));
     } 
     else if (config.dataset === "Dispatch Challans") {
-      const res = await apiClient.get(endpoints.challans.list);
-      return res.data.map((ch: any) => ({
-        "Challan Number": ch.challanNumber,
-        "Date": ch.createdAt ? ch.createdAt.split('T')[0] : "N/A",
-        "Customer": ch.customer?.name || "Unknown",
-        "Total Items": ch.totalQty || 0,
-        "Status": ch.status || "DRAFT",
+      const { data } = await supabase.from('challans').select('*, customers(customer_name), challan_items(quantity)');
+      return (data || []).map((ch: any) => ({
+        "Challan Number": ch.challan_number,
+        "Date": ch.created_at ? ch.created_at.split('T')[0] : "N/A",
+        "Customer": ch.customers?.customer_name || "Unknown",
+        "Total Items": ch.challan_items?.reduce((a: number, b: any) => a + (b.quantity || 0), 0) || 0,
+        "Status": ch.status || "Draft",
       }));
     }
     
     return [];
   },
 
-  /**
-   * Exports data to a CSV file and triggers download.
-   */
   downloadCSV(data: any[], filename: string) {
     const csv = Papa.unparse(data);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -80,13 +77,8 @@ export const exportService = {
     document.body.removeChild(link);
   },
 
-  /**
-   * Exports data to a professional Excel file and triggers download.
-   */
   downloadExcel(data: any[], filename: string, dataset: string) {
     const worksheet = XLSX.utils.json_to_sheet(data);
-
-    // Apply auto-width to columns based on the max length of data in each column
     const colWidths: { wch: number }[] = [];
     const keys = Object.keys(data[0] || {});
     keys.forEach((key) => {
@@ -95,15 +87,12 @@ export const exportService = {
         const val = row[key] ? String(row[key]) : "";
         if (val.length > maxLen) maxLen = val.length;
       });
-      colWidths.push({ wch: maxLen + 2 }); // Add padding
+      colWidths.push({ wch: maxLen + 2 });
     });
     worksheet["!cols"] = colWidths;
 
-    // Create a new workbook and add the worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31)); // Sheet name limit is 31 chars
-
-    // Generate buffer and trigger download
+    XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31));
     XLSX.writeFile(workbook, `${filename}.xlsx`);
   },
 

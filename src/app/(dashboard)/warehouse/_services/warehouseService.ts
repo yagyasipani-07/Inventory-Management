@@ -1,8 +1,10 @@
 import { Product, inventoryService } from '../../inventory/_services/inventoryService';
+import { WarehouseService as RealWarehouseService } from '@/features/warehouse/service';
+import { createBrowserClient } from '@/lib/supabase/browser';
 import * as xlsx from 'xlsx';
 
 export interface WarehouseItem extends Product {
-  location: string; // e.g., 'A-02-B'
+  location: string;
 }
 
 export interface StockMovement {
@@ -22,20 +24,40 @@ export interface WarehouseSummary {
   outOfStockItems: number;
 }
 
-const mockLocations = ['A-01-A', 'A-01-B', 'B-02-C', 'C-03-A', 'D-01-D'];
-
-// Function to generate a stable mock location based on ID
-const getMockLocation = (id: string) => {
-  const num = parseInt(id, 10) || id.charCodeAt(0);
-  return mockLocations[num % mockLocations.length];
-};
+const getService = () => new RealWarehouseService(createBrowserClient());
 
 export const warehouseService = {
   async getWarehouseStock(): Promise<WarehouseItem[]> {
-    const products = await inventoryService.getProducts();
-    return products.map((p) => ({
-      ...p,
-      location: getMockLocation(p.id),
+    const service = getService();
+    const { data } = await service.getStock({});
+    
+    // Fallback: If we have no warehouse data configured yet, just return inventory
+    if (data.length === 0) {
+      const products = await inventoryService.getProducts();
+      return products.map((p) => ({
+        ...p,
+        location: 'Main Warehouse',
+      }));
+    }
+
+    return data.map((item: any) => ({
+      id: item.products.id,
+      code: item.products.product_code || 'N/A',
+      name: item.products.product_name,
+      photoUrl: item.products.product_image_path || '',
+      thickness: item.products.thickness ? `${item.products.thickness}mm` : '18mm',
+      length: item.products.length ? item.products.length.toString() : '8',
+      width: item.products.width ? item.products.width.toString() : '4',
+      size: (item.products.length && item.products.width) ? `${item.products.length}x${item.products.width}` : '8x4',
+      currentStock: item.current_quantity,
+      reservedStock: item.reserved_quantity,
+      availableStock: item.current_quantity - item.reserved_quantity,
+      unit: item.products.unit || 'Pieces',
+      openingStock: 0,
+      minStock: item.reorder_level || 100,
+      description: item.products.description || '',
+      lastUpdated: item.updated_at || new Date().toISOString(),
+      location: item.warehouses.warehouse_name || 'Main Warehouse',
     }));
   },
 
@@ -70,6 +92,7 @@ export const warehouseService = {
       'Current Stock': item.currentStock,
       'Available Stock': item.availableStock,
       'Minimum Stock': item.minStock,
+      'Location': item.location,
       'Last Updated': new Date(item.lastUpdated).toLocaleDateString(),
     }));
 
@@ -82,26 +105,7 @@ export const warehouseService = {
   },
 
   async getStockMovement(productId: string): Promise<StockMovement[]> {
-    // Return mock historical movement
-    return [
-      {
-        id: 'mv-1',
-        productId,
-        date: new Date().toISOString(),
-        action: 'Initial',
-        quantity: 100,
-        user: 'System',
-        reason: 'Initial Upload',
-      },
-      {
-        id: 'mv-2',
-        productId,
-        date: new Date().toISOString(),
-        action: 'Increase',
-        quantity: 50,
-        user: 'Admin',
-        reason: 'Restock shipment',
-      },
-    ];
+    // Phase 4 will implement real stock movements via DB
+    return [];
   },
 };

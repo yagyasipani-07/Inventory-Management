@@ -1,27 +1,28 @@
-export type NavItem = {
-  title: string;
-  href: string;
-  icon: string;
-  badge?: string;
-};
+/**
+ * This file will eventually export the auto-generated Supabase Database types.
+ * For now, we provide a placeholder type to satisfy the TS compiler in our lib/supabase setup.
+ * 
+ * Command to generate types (once DB is running):
+ * supabase gen types typescript --local > src/types/database.types.ts
+ */
 
-export type BreadcrumbItem = {
-  label: string;
-  href?: string;
-};
-
-export type StatCardData = {
-  title: string;
-  value: string | number;
-  description?: string;
-  icon?: string;
-  trend?: {
-    value: number;
-    direction: "up" | "down" | "neutral";
+export interface Database {
+  public: {
+    Tables: {
+      [key: string]: any; // Placeholder
+    };
+    Views: {
+      [key: string]: any;
+    };
+    Functions: {
+      [key: string]: any;
+    };
+    Enums: {
+      [key: string]: any;
+    };
   };
-};
+}
 
-export type DialogState = {
-  open: boolean;
-  data?: Record<string, unknown>;
-};
+// Global utility types can also be exported here
+export type Nullable<T> = T | null;
+export type Optional<T> = T | undefined;

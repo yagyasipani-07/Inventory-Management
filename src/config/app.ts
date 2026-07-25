@@ -1,9 +1,10 @@
+import { env } from "./environment";
+
 export const appConfig = {
-  name: 'Paras Plywoods ERP',
-  version: '1.0.0',
-  description: 'Enterprise Resource Planning for Paras Plywoods',
-  company: {
-    name: 'Paras Plywoods',
-    contact: 'support@parasplywoods.com',
-  },
-} as const;
+  name: env.NEXT_PUBLIC_APP_NAME,
+  environment: env.NEXT_PUBLIC_ENVIRONMENT,
+  isProduction: env.NEXT_PUBLIC_ENVIRONMENT === "production",
+  isDevelopment: env.NEXT_PUBLIC_ENVIRONMENT === "development",
+  url: env.NEXT_PUBLIC_APP_URL,
+  apiUrl: env.NEXT_PUBLIC_API_URL,
+};

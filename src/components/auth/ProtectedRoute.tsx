@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { useAuth } from './AuthProvider';
-import { features } from '@/src/config';
+import { featuresConfig } from '@/src/config';
 
 export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
 
-  if (!features.enableAuth) {
+  if (!featuresConfig.enableAuthentication) {
     return <>{children}</>;
   }
 

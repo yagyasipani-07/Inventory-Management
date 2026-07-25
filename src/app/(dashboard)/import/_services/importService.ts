@@ -1,5 +1,6 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { createBrowserClient } from '@/lib/supabase/browser';
 
 export interface ImportRow {
   [key: string]: any;
@@ -21,33 +22,22 @@ export interface ImportSummary {
   missingFields: number;
 }
 
+const getClient = () => createBrowserClient();
+
 export const importService = {
-  /**
-   * Reads the file asynchronously depending on its extension.
-   */
   async uploadFile(file: File): Promise<string | ArrayBuffer> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        if (e.target?.result !== null && e.target?.result !== undefined) {
-          resolve(e.target.result);
-        } else {
-          reject(new Error("Failed to read file"));
-        }
+        if (e.target?.result !== null && e.target?.result !== undefined) resolve(e.target.result);
+        else reject(new Error("Failed to read file"));
       };
       reader.onerror = (e) => reject(e);
-
-      if (file.name.toLowerCase().endsWith(".csv")) {
-        reader.readAsText(file);
-      } else {
-        reader.readAsArrayBuffer(file);
-      }
+      if (file.name.toLowerCase().endsWith(".csv")) reader.readAsText(file);
+      else reader.readAsArrayBuffer(file);
     });
   },
 
-  /**
-   * Parses CSV content using PapaParse.
-   */
   async parseCSV(text: string): Promise<ImportRow[]> {
     return new Promise((resolve, reject) => {
       Papa.parse(text, {
@@ -59,31 +49,21 @@ export const importService = {
     });
   },
 
-  /**
-   * Parses Excel (XLSX/XLS) content using SheetJS.
-   */
   async parseExcel(buffer: ArrayBuffer): Promise<ImportRow[]> {
     const workbook = XLSX.read(buffer, { type: "array" });
     const firstSheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[firstSheetName];
-    // Defval ensures empty cells are included as empty strings to maintain column consistency
     return XLSX.utils.sheet_to_json<ImportRow>(worksheet, { defval: "" });
   },
 
-  /**
-   * Validates parsed rows based on standard ERP rules.
-   */
   validateRows(rows: ImportRow[]): ValidationResult[] {
     const codes = new Set<string>();
-
     return rows.map((row, index) => {
       const errors: string[] = [];
       const warnings: string[] = [];
-
       const code = String(row.productCode || row["Product Code"] || "").trim();
       const name = String(row.productName || row["Product Name"] || "").trim();
       const rawStock = row.currentStock || row["Current Stock"] || row.stock;
-      
       const stock = rawStock ? Number(rawStock) : 0;
 
       if (!code) errors.push("Missing Product Code");
@@ -91,15 +71,13 @@ export const importService = {
         if (codes.has(code)) errors.push("Duplicate Product Code");
         codes.add(code);
       }
-
       if (!name) errors.push("Missing Product Name");
-      
       if (isNaN(stock)) errors.push("Invalid Quantity");
       else if (stock < 0) errors.push("Negative Stock");
 
       return {
         row,
-        rowIndex: index + 1, // 1-based row index for user friendliness
+        rowIndex: index + 1,
         isValid: errors.length === 0,
         errors,
         warnings,
@@ -107,9 +85,6 @@ export const importService = {
     });
   },
 
-  /**
-   * Generates a summary of the validation results.
-   */
   getSummary(results: ValidationResult[]): ImportSummary {
     let validRows = 0;
     let invalidRows = 0;
@@ -119,42 +94,43 @@ export const importService = {
     results.forEach((r) => {
       if (r.isValid) validRows++;
       else invalidRows++;
-
       r.errors.forEach((err) => {
         if (err.includes("Duplicate")) duplicateProducts++;
         if (err.includes("Missing")) missingFields++;
       });
     });
 
-    return {
-      totalRows: results.length,
-      validRows,
-      invalidRows,
-      duplicateProducts,
-      missingFields,
-    };
+    return { totalRows: results.length, validRows, invalidRows, duplicateProducts, missingFields };
   },
 
-  /**
-   * Imports validated products to the backend.
-   */
   async importProducts(data: any[]): Promise<boolean> {
-    const { apiClient, endpoints } = await import('@/src/lib/api');
+    const supabase = getClient();
     
+    // Convert to DB payload
     const rows = data.map(row => ({
-      productCode: String(row.productCode || row["Product Code"] || "").trim(),
-      mould: String(row.productName || row["Product Name"] || "").trim(),
-      productQty: Number(row.currentStock || row["Current Stock"] || row.stock || 0),
-      lowStockThreshold: Number(row.minStock || row["Minimum Stock"] || 0) || undefined,
+      product_code: String(row.productCode || row["Product Code"] || "").trim(),
+      product_name: String(row.productName || row["Product Name"] || "").trim(),
     }));
 
-    await apiClient.post(endpoints.import.products, { rows });
+    // Perform bulk upsert for products. Warehouse stock initialization should ideally be handled next.
+    const { error } = await supabase.from('products').upsert(rows, { onConflict: 'product_code' });
+    
+    if (error) {
+      console.error("Import failed:", error);
+      return false;
+    }
+    
+    // Log audit
+    await supabase.from('audit_logs').insert({
+      entity: 'Product',
+      entity_id: '00000000-0000-0000-0000-000000000000', // Use real UUID in prod
+      action: 'Import',
+      description: `Bulk imported ${rows.length} products`
+    });
+
     return true; 
   },
   
-  /**
-   * Generates and triggers download of a CSV file for errors.
-   */
   downloadErrorReport(results: ValidationResult[]) {
     const errorRows = results.filter(r => !r.isValid).map(r => ({
       Row: r.rowIndex,
@@ -164,12 +140,10 @@ export const importService = {
     }));
 
     if (errorRows.length === 0) return;
-
     const csv = Papa.unparse(errorRows);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    
     link.setAttribute("href", url);
     link.setAttribute("download", `import_error_report_${new Date().toISOString().slice(0, 10)}.csv`);
     link.style.visibility = "hidden";
@@ -180,18 +154,8 @@ export const importService = {
 
   downloadInventoryTemplate(format: "csv" | "excel") {
     const rows = [
-      {
-        "Product Code": "MR-18-84",
-        "Product Name": "18mm MR Grade Plywood",
-        "Current Stock": 100,
-        "Minimum Stock": 20,
-      },
-      {
-        "Product Code": "BWP-12-84",
-        "Product Name": "12mm BWP Plywood",
-        "Current Stock": 75,
-        "Minimum Stock": 15,
-      },
+      { "Product Code": "MR-18-84", "Product Name": "18mm MR Grade Plywood", "Current Stock": 100, "Minimum Stock": 20 },
+      { "Product Code": "BWP-12-84", "Product Name": "12mm BWP Plywood", "Current Stock": 75, "Minimum Stock": 15 },
     ];
 
     if (format === "csv") {
@@ -217,16 +181,8 @@ export const importService = {
 
   downloadWarehouseTemplate(format: "csv" | "excel") {
     const rows = [
-      {
-        "Product Code": "MR-18-84",
-        "Warehouse Location": "A1-Rack-2",
-        "Current Stock": 50,
-      },
-      {
-        "Product Code": "BWP-12-84",
-        "Warehouse Location": "B2-Rack-1",
-        "Current Stock": 20,
-      },
+      { "Product Code": "MR-18-84", "Warehouse Location": "A1-Rack-2", "Current Stock": 50 },
+      { "Product Code": "BWP-12-84", "Warehouse Location": "B2-Rack-1", "Current Stock": 20 },
     ];
 
     if (format === "csv") {
