@@ -1,13 +1,10 @@
 import { apiClient, endpoints } from '@/src/lib/api';
 
-export type CustomerStatus = 'Active' | 'Inactive' | 'New';
-
 export interface Customer {
   id: string;
   name: string;
   city: string;
-  preferredTransport: string;
-  status: CustomerStatus;
+  phone: string;
   totalChallans: number;
   lastDispatch: string | null;
   notes?: string;
@@ -21,8 +18,7 @@ function mapToUiCustomer(dbCustomer: any): Customer {
     id: dbCustomer.id,
     name: dbCustomer.name || 'Unknown',
     city: dbCustomer.city || 'N/A',
-    preferredTransport: dbCustomer.preferredTransport || 'N/A',
-    status: 'Active', // Mocked as DB doesn't have status yet
+    phone: dbCustomer.phone || '',
     totalChallans: 0, // Mocked as DB doesn't return count directly yet
     lastDispatch: null, // Mocked
     notes: dbCustomer.address || '',
@@ -48,7 +44,7 @@ export const customerService = {
     const payload = {
       name: data.name,
       city: data.city,
-      preferredTransport: data.preferredTransport,
+      phone: data.phone,
       address: data.notes,
     };
     const response = await apiClient.post(endpoints.customers.list, payload);

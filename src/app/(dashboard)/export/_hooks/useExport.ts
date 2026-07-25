@@ -62,6 +62,8 @@ export const useExport = create<ExportState>((set, get) => ({
       
       if (config.format === "csv") {
         exportService.downloadCSV(previewData, filename);
+      } else if (config.format === "pdf") {
+        exportService.downloadPDF(previewData, filename, config.dataset);
       } else {
         exportService.downloadExcel(previewData, filename, config.dataset);
       }

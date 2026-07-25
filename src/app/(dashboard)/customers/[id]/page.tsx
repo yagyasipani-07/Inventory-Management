@@ -3,11 +3,10 @@
 import { PageHeader } from "@/components/shared/page-header";
 import { useCustomer } from "../_hooks/useCustomers";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Edit, FileText, MapPin, Truck, Loader2 } from "lucide-react";
+import { ArrowLeft, Edit, FileText, MapPin, Phone, Truck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { use } from "react";
 import { CustomerError } from "../_components/CustomerError";
-import { CustomerStatusBadge } from "../_components/CustomerStatusBadge";
 import { format } from "date-fns";
 import { Button } from "@/src/components/ui/button";
 
@@ -43,9 +42,6 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
             title={customer.name}
             description={customer.id}
           />
-          <div className="mt-1">
-            <CustomerStatusBadge status={customer.status} />
-          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
@@ -72,15 +68,18 @@ export default function CustomerDetailsPage({ params }: { params: Promise<{ id: 
                 <p className="text-muted-foreground">{customer.city}</p>
               </div>
             </div>
+            <div className="flex items-start gap-3">
+              <Phone className="w-5 h-5 text-muted-foreground mt-0.5" />
+              <div>
+                <p className="font-medium text-foreground">Customer Number</p>
+                <p className="text-muted-foreground">{customer.phone || 'N/A'}</p>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-xl border bg-card p-6 shadow-sm space-y-4">
-            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Preferences</h3>
+            <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Customer Details</h3>
             <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b">
-                <span className="text-muted-foreground">Preferred Transport</span>
-                <span className="font-medium">{customer.preferredTransport}</span>
-              </div>
               <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Added On</span>
                 <span className="font-medium">{format(new Date(customer.createdAt), 'MMM d, yyyy')}</span>

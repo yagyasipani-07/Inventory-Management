@@ -1,5 +1,4 @@
 import { Customer } from '../_services/customerService';
-import { CustomerStatusBadge } from './CustomerStatusBadge';
 import { Button } from '@/src/components/ui/button';
 import {
   Sheet,
@@ -9,7 +8,7 @@ import {
   SheetTitle,
 } from '@/src/components/ui/sheet';
 import Link from 'next/link';
-import { Edit, ExternalLink, MapPin, Truck, FileText } from 'lucide-react';
+import { Edit, ExternalLink, MapPin, Phone, Truck, FileText } from 'lucide-react';
 import { ScrollArea } from '@/src/components/ui/scroll-area';
 import { format } from 'date-fns';
 
@@ -29,10 +28,7 @@ export function CustomerDetailsSheet({ customer, isOpen, onClose }: CustomerDeta
           <SheetTitle className="text-xl flex items-center gap-2">
             {customer.name}
           </SheetTitle>
-          <SheetDescription className="text-base text-muted-foreground flex justify-between items-center">
-            <span>{customer.id}</span>
-            <CustomerStatusBadge status={customer.status} />
-          </SheetDescription>
+          <SheetDescription className="text-base text-muted-foreground">{customer.id}</SheetDescription>
         </SheetHeader>
 
         <ScrollArea className="flex-1">
@@ -61,17 +57,18 @@ export function CustomerDetailsSheet({ customer, isOpen, onClose }: CustomerDeta
                   </span>
                   <span className="text-lg font-semibold">{customer.city}</span>
                 </div>
+                <div className="col-span-2 flex flex-col gap-1 rounded-lg border p-3 bg-muted/30">
+                  <span className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Phone className="w-4 h-4" /> Customer Number
+                  </span>
+                  <span className="text-lg font-semibold">{customer.phone || 'N/A'}</span>
+                </div>
               </div>
             </div>
 
-            {/* Transport Preferences */}
             <div className="space-y-3">
-              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Preferences</h3>
+              <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Customer Details</h3>
               <div className="text-sm space-y-2">
-                <div className="flex justify-between border-b pb-2">
-                  <span className="text-muted-foreground">Preferred Transport</span>
-                  <span className="font-medium">{customer.preferredTransport}</span>
-                </div>
                 <div className="flex justify-between border-b pb-2">
                   <span className="text-muted-foreground">Added On</span>
                   <span className="font-medium">{format(new Date(customer.createdAt), 'MMM d, yyyy')}</span>

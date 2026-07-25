@@ -1,7 +1,8 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { printPdfReport } from "@/src/lib/export/printPdf";
 
-export type ExportFormat = "csv" | "excel";
+export type ExportFormat = "csv" | "excel" | "pdf";
 export type ExportDataset = "Inventory" | "Warehouse Stock" | "Customers" | "Dispatch Challans";
 
 export interface ExportConfig {
@@ -27,9 +28,7 @@ export const exportService = {
             "Product Code": p.productCode,
             "Product Name": p.mould || "N/A",
             "Current Stock": p.currentStock || 0,
-            "Reserved Stock": p.reservedStock || 0,
             "Available Stock": (p.currentStock || 0) - (p.reservedStock || 0),
-            "Status": ((p.currentStock || 0) - (p.reservedStock || 0)) <= (p.lowStockThreshold || 0) ? "Low Stock" : "In Stock",
           };
         } else {
           return {
@@ -45,9 +44,8 @@ export const exportService = {
       return res.data.map((c: any) => ({
         "Customer Name": c.name,
         "City": c.city || "N/A",
-        "Transport": c.preferredTransport || "N/A",
+        "Customer Number": c.phone || "N/A",
         "Total Challans": 0, // Not available in list endpoint yet
-        "Status": "Active",
       }));
     } 
     else if (config.dataset === "Dispatch Challans") {
@@ -107,5 +105,9 @@ export const exportService = {
 
     // Generate buffer and trigger download
     XLSX.writeFile(workbook, `${filename}.xlsx`);
+  },
+
+  downloadPDF(data: any[], filename: string, dataset: string) {
+    printPdfReport(`${dataset} Report`, data, filename);
   }
 };

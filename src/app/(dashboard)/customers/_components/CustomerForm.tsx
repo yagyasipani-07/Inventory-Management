@@ -12,21 +12,13 @@ import {
 } from '@/src/components/ui/form';
 import { Input } from '@/src/components/ui/input';
 import { Textarea } from '@/src/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
 import { CustomerFormData } from '../_services/customerService';
 import { Loader2 } from 'lucide-react';
 
 const customerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
-  preferredTransport: z.string().min(2, 'Transport must be at least 2 characters'),
-  status: z.enum(['Active', 'Inactive', 'New']),
+  phone: z.string().min(7, 'Customer number must be at least 7 digits'),
   notes: z.string().optional(),
 });
 
@@ -48,8 +40,7 @@ export function CustomerForm({
     defaultValues: {
       name: initialData?.name || '',
       city: initialData?.city || '',
-      preferredTransport: initialData?.preferredTransport || '',
-      status: initialData?.status || 'Active',
+      phone: initialData?.phone || '',
       notes: initialData?.notes || '',
     },
   });
@@ -74,29 +65,6 @@ export function CustomerForm({
 
           <FormField
             control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a status" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
-                    <SelectItem value="New">New</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
             name="city"
             render={({ field }) => (
               <FormItem>
@@ -111,12 +79,12 @@ export function CustomerForm({
 
           <FormField
             control={form.control}
-            name="preferredTransport"
+            name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Preferred Transport</FormLabel>
+                <FormLabel>Customer Number</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. Delhi Freight Carriers" {...field} />
+                  <Input placeholder="e.g. 9876543210" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

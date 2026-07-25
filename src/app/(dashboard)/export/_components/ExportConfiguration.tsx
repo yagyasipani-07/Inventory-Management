@@ -3,7 +3,7 @@
 import { useExport } from "../_hooks/useExport";
 import { ExportFormat } from "../_services/exportService";
 import { cn } from "@/lib/utils";
-import { FileSpreadsheet, FileJson, CalendarIcon } from "lucide-react";
+import { FileSpreadsheet, FileJson, FileText, CalendarIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export function ExportConfiguration() {
         {/* Format Selection */}
         <div className="space-y-4">
           <Label className="text-base">Export Format</Label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <button
               onClick={() => setFormat("excel")}
               className={cn(
@@ -43,6 +43,18 @@ export function ExportConfiguration() {
             >
               <FileJson className={cn("h-5 w-5", config.format === "csv" ? "text-blue-500" : "text-muted-foreground")} />
               <span className="font-medium">CSV (.csv)</span>
+            </button>
+            <button
+              onClick={() => setFormat("pdf")}
+              className={cn(
+                "flex items-center gap-3 rounded-lg border p-4 transition-colors",
+                config.format === "pdf"
+                  ? "border-rose-500 bg-rose-500/10 text-rose-700 dark:text-rose-400"
+                  : "border-border hover:bg-muted"
+              )}
+            >
+              <FileText className={cn("h-5 w-5", config.format === "pdf" ? "text-rose-500" : "text-muted-foreground")} />
+              <span className="font-medium">PDF (.pdf)</span>
             </button>
           </div>
         </div>

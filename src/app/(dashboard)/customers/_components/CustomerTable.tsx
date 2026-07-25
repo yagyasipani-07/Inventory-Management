@@ -9,7 +9,6 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { Customer } from '../_services/customerService';
-import { CustomerStatusBadge } from './CustomerStatusBadge';
 import { Button } from '@/src/components/ui/button';
 import { ArrowUpDown, ChevronLeft, ChevronRight, Eye, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import {
@@ -66,12 +65,10 @@ export function CustomerTable({ data, onViewDetails, onEdit, onDelete }: Custome
         ),
       },
       {
-        accessorKey: 'preferredTransport',
-        header: 'Preferred Transport',
+        accessorKey: 'phone',
+        header: 'Customer Number',
         cell: ({ row }) => (
-          <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
-            {row.getValue('preferredTransport')}
-          </span>
+          <span className="text-muted-foreground">{row.getValue('phone') || 'N/A'}</span>
         ),
       },
       {
@@ -109,13 +106,6 @@ export function CustomerTable({ data, onViewDetails, onEdit, onDelete }: Custome
             </span>
           );
         },
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ row }) => (
-          <CustomerStatusBadge status={row.getValue('status')} />
-        ),
       },
       {
         id: 'actions',

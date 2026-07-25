@@ -18,7 +18,6 @@ export interface StockMovement {
 export interface WarehouseSummary {
   totalProducts: number;
   availableUnits: number;
-  reservedUnits: number;
   lowStockItems: number;
   outOfStockItems: number;
 }
@@ -46,7 +45,6 @@ export const warehouseService = {
       (acc, item) => {
         acc.totalProducts += 1;
         acc.availableUnits += item.availableStock;
-        acc.reservedUnits += item.reservedStock;
         if (item.availableStock === 0) {
           acc.outOfStockItems += 1;
         } else if (item.availableStock < item.minStock) {
@@ -57,7 +55,6 @@ export const warehouseService = {
       {
         totalProducts: 0,
         availableUnits: 0,
-        reservedUnits: 0,
         lowStockItems: 0,
         outOfStockItems: 0,
       }
@@ -70,19 +67,9 @@ export const warehouseService = {
       Name: item.name,
       Dimensions: item.size,
       Thickness: item.thickness,
-      Location: item.location,
       'Current Stock': item.currentStock,
-      'Reserved Stock': item.reservedStock,
       'Available Stock': item.availableStock,
       'Minimum Stock': item.minStock,
-      Status:
-        item.availableStock === 0
-          ? 'Out of Stock'
-          : item.availableStock < item.minStock
-          ? 'Critical'
-          : item.availableStock === item.minStock
-          ? 'Warning'
-          : 'Healthy',
       'Last Updated': new Date(item.lastUpdated).toLocaleDateString(),
     }));
 

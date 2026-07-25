@@ -12,8 +12,6 @@ import {
 interface CustomerToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
   cityFilter: string;
   onCityFilterChange: (value: string) => void;
   onRefresh: () => void;
@@ -24,19 +22,16 @@ interface CustomerToolbarProps {
 export function CustomerToolbar({
   searchQuery,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
   cityFilter,
   onCityFilterChange,
   onRefresh,
   isRefreshing,
   uniqueCities,
 }: CustomerToolbarProps) {
-  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || cityFilter !== 'all';
+  const hasActiveFilters = searchQuery !== '' || cityFilter !== 'all';
 
   const handleClearFilters = () => {
     onSearchChange('');
-    onStatusFilterChange('all');
     onCityFilterChange('all');
   };
 
@@ -46,25 +41,13 @@ export function CustomerToolbar({
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search name, city, or transport..."
+            placeholder="Search name, city, or number..."
             className="pl-9 bg-background w-full"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
         
-        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="w-[140px] sm:w-[160px] bg-background">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Active">Active</SelectItem>
-            <SelectItem value="Inactive">Inactive</SelectItem>
-            <SelectItem value="New">New</SelectItem>
-          </SelectContent>
-        </Select>
-
         <Select value={cityFilter} onValueChange={onCityFilterChange}>
           <SelectTrigger className="w-[140px] sm:w-[160px] bg-background">
             <SelectValue placeholder="City" />

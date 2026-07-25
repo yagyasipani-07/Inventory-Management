@@ -1,4 +1,4 @@
-import { Users, UserCheck, Truck, UserX } from 'lucide-react';
+import { Users, Phone, Truck } from 'lucide-react';
 import { Customer } from '../_services/customerService';
 import { useMemo } from 'react';
 
@@ -8,16 +8,14 @@ interface CustomerSummaryCardsProps {
 
 export function CustomerSummaryCards({ customers }: CustomerSummaryCardsProps) {
   const summary = useMemo(() => {
-    let active = 0;
-    let inactive = 0;
+    let customersWithNumbers = 0;
     let recentDispatch = 0;
 
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     customers.forEach((customer) => {
-      if (customer.status === 'Active') active++;
-      if (customer.status === 'Inactive') inactive++;
+      if (customer.phone) customersWithNumbers++;
       
       if (customer.lastDispatch) {
         const dispatchDate = new Date(customer.lastDispatch);
@@ -29,8 +27,7 @@ export function CustomerSummaryCards({ customers }: CustomerSummaryCardsProps) {
 
     return {
       total: customers.length,
-      active,
-      inactive,
+      customersWithNumbers,
       recentDispatch,
     };
   }, [customers]);
@@ -43,10 +40,10 @@ export function CustomerSummaryCards({ customers }: CustomerSummaryCardsProps) {
       icon: Users,
     },
     {
-      title: 'Active Customers',
-      value: summary.active,
-      description: 'Currently trading',
-      icon: UserCheck,
+      title: 'Numbers Added',
+      value: summary.customersWithNumbers,
+      description: 'Customers with contact number',
+      icon: Phone,
     },
     {
       title: 'Recent Dispatches',
@@ -54,16 +51,10 @@ export function CustomerSummaryCards({ customers }: CustomerSummaryCardsProps) {
       description: 'Active in last 30 days',
       icon: Truck,
     },
-    {
-      title: 'Inactive Customers',
-      value: summary.inactive,
-      description: 'No recent activity',
-      icon: UserX,
-    },
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-3">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (

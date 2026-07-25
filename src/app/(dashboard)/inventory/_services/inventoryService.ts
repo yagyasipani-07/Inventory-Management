@@ -4,6 +4,7 @@ export interface Product {
   id: string;
   code: string;
   name: string;
+  photoUrl?: string;
   thickness: string;
   length: string;
   width: string;
@@ -25,6 +26,7 @@ function mapToUiProduct(dbProduct: any): Product {
     id: dbProduct.id,
     code: dbProduct.productCode || 'N/A',
     name: dbProduct.mould || 'Plywood',
+    photoUrl: dbProduct.photoUrl || '',
     thickness: parts[1] ? `${parts[1]}mm` : '18mm',
     length: parts[2] ? parts[2][0] : '8',
     width: parts[2] ? parts[2][1] : '4',
@@ -58,6 +60,7 @@ export const inventoryService = {
     const payload = {
       productCode: data.code,
       mould: data.name,
+      photoUrl: data.photoUrl,
       productQty: data.openingStock,
       lowStockThreshold: data.minStock,
     };
@@ -73,7 +76,9 @@ export const inventoryService = {
     const payload = {
       productCode: data.code,
       mould: data.name,
+      photoUrl: data.photoUrl,
       productQty: data.openingStock,
+      lowStockThreshold: data.minStock,
     };
     const response = await apiClient.post(endpoints.products.list, payload);
     return mapToUiProduct(response.data);

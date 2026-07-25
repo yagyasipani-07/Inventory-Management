@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { Customer } from '../../customers/_services/customerService';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
-import { Search, MapPin, Truck, CheckCircle2 } from 'lucide-react';
+import { Search, MapPin, Phone, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { ScrollArea } from '@/src/components/ui/scroll-area';
 
@@ -18,7 +18,8 @@ export function CustomerSelector({ customers, selectedCustomerId, onSelect }: Cu
   const filteredCustomers = useMemo(() => {
     return customers.filter(c => 
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.city.toLowerCase().includes(searchQuery.toLowerCase())
+      c.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.phone.toLowerCase().includes(searchQuery.toLowerCase())
     );
   }, [customers, searchQuery]);
 
@@ -27,7 +28,7 @@ export function CustomerSelector({ customers, selectedCustomerId, onSelect }: Cu
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Search customers by name or city..."
+          placeholder="Search customers by name, city, or number..."
           className="pl-9"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
@@ -51,22 +52,15 @@ export function CustomerSelector({ customers, selectedCustomerId, onSelect }: Cu
               >
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="space-y-1">
-                    <div className="font-medium flex items-center gap-2">
-                      {customer.name}
-                      {customer.status === 'Active' ? (
-                        <span className="h-2 w-2 rounded-full bg-green-500" title="Active" />
-                      ) : (
-                        <span className="h-2 w-2 rounded-full bg-red-500" title="Inactive" />
-                      )}
-                    </div>
+                    <div className="font-medium flex items-center gap-2">{customer.name}</div>
                     <div className="flex items-center text-xs text-muted-foreground gap-4">
                       <span className="flex items-center gap-1">
                         <MapPin className="h-3 w-3" />
                         {customer.city}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Truck className="h-3 w-3" />
-                        {customer.preferredTransport}
+                        <Phone className="h-3 w-3" />
+                        {customer.phone || 'N/A'}
                       </span>
                     </div>
                   </div>

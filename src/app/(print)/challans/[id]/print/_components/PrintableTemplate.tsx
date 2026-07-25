@@ -6,11 +6,6 @@ interface PrintableTemplateProps {
 }
 
 export function PrintableTemplate({ challan }: PrintableTemplateProps) {
-  const totalAmount = challan.items.reduce((sum, item) => {
-    const amount = Number(item.amount);
-    return sum + (isNaN(amount) ? 0 : amount);
-  }, 0);
-
   return (
     <div className="bg-white text-black p-8 max-w-[210mm] mx-auto min-h-[297mm]">
       {/* Header */}
@@ -49,8 +44,8 @@ export function PrintableTemplate({ challan }: PrintableTemplateProps) {
               <th className="py-2 px-2 text-left w-12 border-r border-gray-300">S.No</th>
               <th className="py-2 px-2 text-left border-r border-gray-300">Description of Goods</th>
               <th className="py-2 px-2 text-right w-24 border-r border-gray-300">Quantity</th>
-              <th className="py-2 px-2 text-right w-32 border-r border-gray-300">Rate (₹)</th>
-              <th className="py-2 px-2 text-right w-32">Amount (₹)</th>
+              <th className="py-2 px-2 text-right w-32 border-r border-gray-300">Rate</th>
+              <th className="py-2 px-2 text-right w-32">Amount</th>
             </tr>
           </thead>
           <tbody>
@@ -62,8 +57,8 @@ export function PrintableTemplate({ challan }: PrintableTemplateProps) {
                   <div className="text-xs text-gray-600 mt-1">Size: {item.size} | Thick: {item.thickness}</div>
                 </td>
                 <td className="py-3 px-2 text-right border-r border-gray-300 font-medium">{item.quantity}</td>
-                <td className="py-3 px-2 text-right border-r border-gray-300">{item.rate || '-'}</td>
-                <td className="py-3 px-2 text-right font-medium">{item.amount || '-'}</td>
+                <td className="py-3 px-2 text-right border-r border-gray-300"></td>
+                <td className="py-3 px-2 text-right font-medium"></td>
               </tr>
             ))}
           </tbody>
@@ -72,7 +67,7 @@ export function PrintableTemplate({ challan }: PrintableTemplateProps) {
               <td colSpan={2} className="py-2 px-2 text-right border-r border-gray-300">TOTAL</td>
               <td className="py-2 px-2 text-right border-r border-gray-300">{challan.totalQuantity}</td>
               <td className="py-2 px-2 border-r border-gray-300"></td>
-              <td className="py-2 px-2 text-right">₹{totalAmount.toLocaleString()}</td>
+              <td className="py-2 px-2 text-right"></td>
             </tr>
           </tfoot>
         </table>

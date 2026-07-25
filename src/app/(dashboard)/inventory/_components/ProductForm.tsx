@@ -37,6 +37,7 @@ const productSchema = z.object({
   length: z.string().min(1, 'Length is required'),
   width: z.string().min(1, 'Width is required'),
   unit: z.string().min(1, 'Unit is required'),
+  photoUrl: z.string().optional(),
   openingStock: z.coerce.number().min(0, 'Must be 0 or more'),
   minStock: z.coerce.number().min(0, 'Must be 0 or more'),
   description: z.string().optional(),
@@ -65,6 +66,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
       length: '8',
       width: '4',
       unit: 'Pieces',
+      photoUrl: '',
       openingStock: 0,
       minStock: 10,
       description: '',
@@ -87,6 +89,20 @@ export function ProductForm({ initialData }: ProductFormProps) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handlePhotoChange = (file: File | undefined, onChange: (value: string) => void) => {
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose a valid image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => onChange(String(reader.result || ''));
+    reader.onerror = () => toast.error('Failed to read product photo');
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -115,6 +131,44 @@ export function ProductForm({ initialData }: ProductFormProps) {
                 <FormLabel>Product Name</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. MR Grade Plywood" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="photoUrl"
+            render={({ field }) => (
+              <FormItem className="md:col-span-2">
+                <FormLabel>Product Photo</FormLabel>
+                <FormControl>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    {field.value ? (
+                      <img
+                        src={field.value}
+                        alt="Product preview"
+                        className="h-24 w-24 rounded-md border object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-24 w-24 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
+                        No photo
+                      </div>
+                    )}
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => handlePhotoChange(event.target.files?.[0], field.onChange)}
+                      />
+                      {field.value && (
+                        <Button type="button" variant="outline" size="sm" onClick={() => field.onChange('')}>
+                          Remove Photo
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>

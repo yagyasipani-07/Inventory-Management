@@ -1,4 +1,4 @@
-import { Package2, Boxes, Archive, TriangleAlert, CircleOff } from 'lucide-react';
+import { Package2, Boxes, TriangleAlert, CircleOff } from 'lucide-react';
 import { WarehouseSummary } from '../_services/warehouseService';
 
 interface WarehouseSummaryCardsProps {
@@ -20,12 +20,6 @@ export function WarehouseSummaryCards({ summary }: WarehouseSummaryCardsProps) {
       icon: Boxes,
     },
     {
-      title: 'Reserved Units',
-      value: summary.reservedUnits,
-      description: 'Allocated to challans',
-      icon: Archive,
-    },
-    {
       title: 'Low Stock Items',
       value: summary.lowStockItems,
       description: 'Below minimum threshold',
@@ -40,7 +34,7 @@ export function WarehouseSummaryCards({ summary }: WarehouseSummaryCardsProps) {
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (

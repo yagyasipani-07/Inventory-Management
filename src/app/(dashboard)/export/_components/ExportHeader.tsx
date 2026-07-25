@@ -4,7 +4,7 @@ export function ExportHeader() {
   return (
     <PageHeader
       title="Export Data"
-      description="Securely export your inventory, stock, or customer data to CSV or Excel."
+      description="Securely export your inventory, stock, or customer data to CSV, Excel, or PDF."
     />
   );
 }

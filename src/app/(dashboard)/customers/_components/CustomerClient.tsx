@@ -18,7 +18,6 @@ export function CustomerClient() {
   const { data: customers, isLoading, error, refetch } = useCustomers();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -40,24 +39,18 @@ export function CustomerClient() {
         const matchesSearch = 
           customer.name.toLowerCase().includes(query) ||
           customer.city.toLowerCase().includes(query) ||
-          customer.preferredTransport.toLowerCase().includes(query);
+          customer.phone.toLowerCase().includes(query);
         
         if (!matchesSearch) return false;
       }
 
-      // 2. Status filter
-      if (statusFilter !== 'all') {
-        if (customer.status !== statusFilter) return false;
-      }
-
-      // 3. City filter
       if (cityFilter !== 'all') {
         if (customer.city !== cityFilter) return false;
       }
 
       return true;
     });
-  }, [customers, searchQuery, statusFilter, cityFilter]);
+  }, [customers, searchQuery, cityFilter]);
 
   if (isLoading) {
     return <CustomerSkeleton />;
@@ -79,8 +72,6 @@ export function CustomerClient() {
         <CustomerToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
           cityFilter={cityFilter}
           onCityFilterChange={setCityFilter}
           onRefresh={() => refetch()}

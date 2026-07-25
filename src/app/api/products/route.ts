@@ -16,7 +16,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { productCode, mould, productQty, qtyPcsPerBox, adjustment, reason } = body
+    const { productCode, mould, productQty, qtyPcsPerBox, adjustment, reason, photoUrl, lowStockThreshold } = body
     if (!productCode) return NextResponse.json({ error: 'productCode required' }, { status: 400 })
 
     const initialQty = typeof productQty === 'number' ? productQty : 0
@@ -27,13 +27,18 @@ export async function POST(request: Request) {
       where: { productCode },
       update: {
         mould: mould ?? undefined,
+        photoUrl: typeof photoUrl === 'string' ? photoUrl : undefined,
+        productQty: typeof productQty === 'number' ? productQty : undefined,
+        lowStockThreshold: typeof lowStockThreshold === 'number' ? lowStockThreshold : undefined,
         qtyPcsPerBox: typeof qtyPcsPerBox === 'number' ? qtyPcsPerBox : undefined,
         currentStock: adjVal !== 0 ? { increment: adjVal } : undefined,
       },
       create: {
         productCode,
+        photoUrl: typeof photoUrl === 'string' ? photoUrl : null,
         mould: mould ?? null,
         productQty: typeof productQty === 'number' ? productQty : null,
+        lowStockThreshold: typeof lowStockThreshold === 'number' ? lowStockThreshold : null,
         qtyPcsPerBox: typeof qtyPcsPerBox === 'number' ? qtyPcsPerBox : null,
         currentStock: finalStock,
       },

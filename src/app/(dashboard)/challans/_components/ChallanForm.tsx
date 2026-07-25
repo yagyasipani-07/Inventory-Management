@@ -76,7 +76,7 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
       city: selectedCustomer.city,
-      transport: selectedCustomer.preferredTransport || '',
+      transport: '',
       items,
       notes
     };

@@ -1,21 +1,10 @@
 import { Search, Download, RefreshCw, X } from 'lucide-react';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
 
 interface WarehouseToolbarProps {
   searchQuery: string;
   onSearchChange: (value: string) => void;
-  statusFilter: string;
-  onStatusFilterChange: (value: string) => void;
-  zoneFilter: string;
-  onZoneFilterChange: (value: string) => void;
   onExport: () => void;
   onRefresh: () => void;
   isExporting?: boolean;
@@ -25,21 +14,15 @@ interface WarehouseToolbarProps {
 export function WarehouseToolbar({
   searchQuery,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
-  zoneFilter,
-  onZoneFilterChange,
   onExport,
   onRefresh,
   isExporting,
   isRefreshing,
 }: WarehouseToolbarProps) {
-  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || zoneFilter !== 'all';
+  const hasActiveFilters = searchQuery !== '';
 
   const handleClearFilters = () => {
     onSearchChange('');
-    onStatusFilterChange('all');
-    onZoneFilterChange('all');
   };
 
   return (
@@ -48,39 +31,12 @@ export function WarehouseToolbar({
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search code, name, dimensions, or location..."
+            placeholder="Filter by product name..."
             className="pl-9 bg-background w-full"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
           />
         </div>
-        
-        <Select value={statusFilter} onValueChange={onStatusFilterChange}>
-          <SelectTrigger className="w-[140px] sm:w-[160px] bg-background">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="healthy">Healthy</SelectItem>
-            <SelectItem value="warning">Warning</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-            <SelectItem value="out_of_stock">Out of Stock</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={zoneFilter} onValueChange={onZoneFilterChange}>
-          <SelectTrigger className="w-[140px] sm:w-[160px] bg-background">
-            <SelectValue placeholder="Zone" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Zones</SelectItem>
-            <SelectItem value="a">Zone A</SelectItem>
-            <SelectItem value="b">Zone B</SelectItem>
-            <SelectItem value="c">Zone C</SelectItem>
-            <SelectItem value="d">Zone D</SelectItem>
-          </SelectContent>
-        </Select>
-
         {hasActiveFilters && (
           <Button
             variant="ghost"
@@ -112,7 +68,7 @@ export function WarehouseToolbar({
           className="h-9"
         >
           <Download className="h-4 w-4 mr-2" />
-          Export Excel
+          Export PDF
         </Button>
       </div>
     </div>

@@ -9,7 +9,6 @@ import {
   SortingState,
 } from '@tanstack/react-table';
 import { WarehouseItem } from '../_services/warehouseService';
-import { StockStatusBadge } from './StockStatusBadge';
 import { Button } from '@/src/components/ui/button';
 import { ArrowUpDown, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import {
@@ -61,15 +60,6 @@ export function WarehouseTable({ data, onViewDetails }: WarehouseTableProps) {
         ),
       },
       {
-        accessorKey: 'location',
-        header: 'Location',
-        cell: ({ row }) => (
-          <span className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium ring-1 ring-inset ring-gray-500/10">
-            {row.getValue('location')}
-          </span>
-        ),
-      },
-      {
         accessorKey: 'availableStock',
         header: ({ column }) => {
           return (
@@ -93,22 +83,6 @@ export function WarehouseTable({ data, onViewDetails }: WarehouseTableProps) {
             </span>
           );
         },
-      },
-      {
-        accessorKey: 'reservedStock',
-        header: 'Reserved',
-        cell: ({ row }) => (
-          <span className="text-muted-foreground">
-            {(row.getValue('reservedStock') as number).toLocaleString()}
-          </span>
-        ),
-      },
-      {
-        id: 'status',
-        header: 'Status',
-        cell: ({ row }) => (
-          <StockStatusBadge available={row.original.availableStock} min={row.original.minStock} />
-        ),
       },
       {
         id: 'actions',

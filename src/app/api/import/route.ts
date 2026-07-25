@@ -16,6 +16,7 @@ export async function POST(request: Request) {
 
       const qty = row.productQty ? Number(row.productQty) : 0
       const perBox = row.qtyPcsPerBox ? Number(row.qtyPcsPerBox) : null
+      const lowStockThreshold = row.lowStockThreshold ? Number(row.lowStockThreshold) : null
 
       const product = await prisma.product.upsert({
         where: { productCode },
@@ -23,12 +24,14 @@ export async function POST(request: Request) {
           mould: row.mould ? String(row.mould) : undefined,
           currentStock: qty ? { increment: qty } : undefined,
           qtyPcsPerBox: perBox || undefined,
+          lowStockThreshold: lowStockThreshold || undefined,
         },
         create: {
           productCode,
           mould: row.mould ? String(row.mould) : null,
           productQty: qty || null,
           qtyPcsPerBox: perBox,
+          lowStockThreshold,
           currentStock: qty,
         },
       })

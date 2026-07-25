@@ -11,15 +11,13 @@ import { WarehouseEmptyState } from './WarehouseEmptyState';
 import { WarehouseError } from './WarehouseError';
 import { WarehouseDetailsSheet } from './WarehouseDetailsSheet';
 import { toast } from 'sonner';
+import { printPdfReport } from '@/src/lib/export/printPdf';
 
 export function WarehouseClient() {
   const { data: stock, isLoading: isStockLoading, error: stockError, refetch: refetchStock } = useWarehouseStock();
   const { data: summary, isLoading: isSummaryLoading, error: summaryError, refetch: refetchSummary } = useWarehouseSummary();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [zoneFilter, setZoneFilter] = useState('all');
-  
   const [selectedProduct, setSelectedProduct] = useState<WarehouseItem | null>(null);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -27,47 +25,32 @@ export function WarehouseClient() {
     if (!stock) return [];
 
     return stock.filter((item) => {
-      // 1. Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
-        const matchesSearch = 
-          item.code.toLowerCase().includes(query) ||
-          item.name.toLowerCase().includes(query) ||
-          item.location.toLowerCase().includes(query) ||
-          item.size.toLowerCase().includes(query);
+        const matchesSearch = item.name.toLowerCase().includes(query);
         
         if (!matchesSearch) return false;
       }
 
-      // 2. Status filter
-      if (statusFilter !== 'all') {
-        const isOutOfStock = item.availableStock === 0;
-        const isCritical = !isOutOfStock && item.availableStock < item.minStock;
-        const isWarning = item.availableStock === item.minStock;
-        const isHealthy = item.availableStock > item.minStock;
-
-        if (statusFilter === 'out_of_stock' && !isOutOfStock) return false;
-        if (statusFilter === 'critical' && !isCritical) return false;
-        if (statusFilter === 'warning' && !isWarning) return false;
-        if (statusFilter === 'healthy' && !isHealthy) return false;
-      }
-
-      // 3. Zone filter
-      if (zoneFilter !== 'all') {
-        if (!item.location.toLowerCase().startsWith(zoneFilter.toLowerCase())) {
-          return false;
-        }
-      }
-
       return true;
     });
-  }, [stock, searchQuery, statusFilter, zoneFilter]);
+  }, [stock, searchQuery]);
 
   const handleExport = async () => {
     try {
       setIsExporting(true);
-      await warehouseService.exportWarehouse(filteredStock);
-      toast.success("Warehouse stock data exported to Excel.");
+      const rows = filteredStock.map((item) => ({
+        Code: item.code,
+        Name: item.name,
+        Dimensions: item.size,
+        Thickness: item.thickness,
+        'Current Stock': item.currentStock,
+        'Available Stock': item.availableStock,
+        'Minimum Stock': item.minStock,
+        Unit: item.unit,
+      }));
+      printPdfReport('Warehouse Stock Report', rows, `warehouse-stock-${new Date().toISOString().split('T')[0]}`);
+      toast.success("Warehouse stock PDF opened.");
     } catch (error) {
       toast.error("There was an error exporting the warehouse data.");
     } finally {
@@ -104,10 +87,6 @@ export function WarehouseClient() {
         <WarehouseToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          statusFilter={statusFilter}
-          onStatusFilterChange={setStatusFilter}
-          zoneFilter={zoneFilter}
-          onZoneFilterChange={setZoneFilter}
           onExport={handleExport}
           onRefresh={handleRefresh}
           isExporting={isExporting}

@@ -5,6 +5,7 @@ import { ImportDropzone } from "./_components/ImportDropzone";
 import { ImportValidationPanel } from "./_components/ImportValidationPanel";
 import { ImportPreviewTable } from "./_components/ImportPreviewTable";
 import { ImportSummaryCards } from "./_components/ImportSummaryCards";
+import { ImportTemplateActions } from "./_components/ImportTemplateActions";
 
 export const metadata: Metadata = {
   title: "Import Data | Paras Plywoods ERP",
@@ -18,6 +19,7 @@ export default function ImportPage() {
       
       <div className="space-y-6">
         <ImportTypeCards />
+        <ImportTemplateActions />
         <ImportDropzone />
         <ImportValidationPanel />
         <ImportPreviewTable />

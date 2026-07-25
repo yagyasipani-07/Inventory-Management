@@ -24,7 +24,6 @@ import {
 import { Product } from '../_services/inventoryService';
 import { InventoryToolbar } from './InventoryToolbar';
 import { InventoryPagination } from './InventoryPagination';
-import { ProductStatusBadge } from './ProductStatusBadge';
 import { Button } from '@/src/components/ui/button';
 import { ArrowUpDown, MoreHorizontal, Eye, Edit, Trash2, ArrowRightLeft } from 'lucide-react';
 import {
@@ -36,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/src/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { printPdfReport } from '@/src/lib/export/printPdf';
 
 interface InventoryTableProps {
   data: Product[];
@@ -53,7 +53,16 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
     {
       accessorKey: 'code',
       header: 'Code',
-      cell: ({ row }) => <div className="font-medium whitespace-nowrap">{row.getValue('code')}</div>,
+      cell: ({ row }) => (
+        <div className="flex items-center gap-3">
+          {row.original.photoUrl ? (
+            <img src={row.original.photoUrl} alt="" className="h-10 w-10 rounded-md border object-cover" />
+          ) : (
+            <div className="h-10 w-10 rounded-md border bg-muted" />
+          )}
+          <div className="font-medium whitespace-nowrap">{row.getValue('code')}</div>
+        </div>
+      ),
     },
     {
       accessorKey: 'name',
@@ -91,15 +100,6 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
       ),
     },
     {
-      accessorKey: 'reservedStock',
-      header: () => <div className="text-right">Reserved</div>,
-      cell: ({ row }) => (
-        <div className="text-right text-muted-foreground">
-          {row.getValue('reservedStock')}
-        </div>
-      ),
-    },
-    {
       accessorKey: 'availableStock',
       header: () => <div className="text-right">Available</div>,
       cell: ({ row }) => (
@@ -107,19 +107,6 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
           {row.getValue('availableStock')}
         </div>
       ),
-    },
-    {
-      id: 'status',
-      accessorFn: (row) => row.currentStock,
-      header: 'Status',
-      cell: ({ row }) => <ProductStatusBadge currentStock={row.getValue('status')} />,
-      filterFn: (row, id, value) => {
-        const stock = row.getValue(id) as number;
-        if (value === 'healthy') return stock > 100;
-        if (value === 'low') return stock >= 30 && stock <= 100;
-        if (value === 'critical') return stock < 30;
-        return true;
-      },
     },
     {
       id: 'actions',
@@ -184,9 +171,24 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
     },
   });
 
+  const handleExportPdf = () => {
+    const rows = table.getFilteredRowModel().rows.map(({ original }) => ({
+      Code: original.code,
+      Name: original.name,
+      Thickness: original.thickness,
+      Size: original.size,
+      'Current Stock': original.currentStock,
+      'Available Stock': original.availableStock,
+      'Minimum Stock': original.minStock,
+      Unit: original.unit,
+    }));
+
+    printPdfReport('Inventory Stock Report', rows, `inventory-stock-${new Date().toISOString().split('T')[0]}`);
+  };
+
   return (
     <div className="space-y-4">
-      <InventoryToolbar table={table} />
+      <InventoryToolbar table={table} onExportPdf={handleExportPdf} />
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>

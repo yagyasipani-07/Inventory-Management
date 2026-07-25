@@ -47,6 +47,7 @@ model Product {
   slrNo             Int?
   mould             String?
   productCode       String  @unique
+  photoUrl          String?
   productQty        Int?
   qtyPcsPerBox      Int?
   packType          String?

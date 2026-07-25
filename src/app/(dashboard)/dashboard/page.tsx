@@ -21,7 +21,7 @@ import {
   useRecentActivity,
   useRecentChallans,
 } from './_services/dashboardService';
-import { Package, IndianRupee, Truck, TriangleAlert } from 'lucide-react';
+import { Package, Truck, TriangleAlert } from 'lucide-react';
 
 export default function DashboardPage() {
   const {
@@ -69,9 +69,9 @@ export default function DashboardPage() {
           <DashboardError message="Failed to load KPIs" onRetry={refetchStats} />
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-3">
           {isLoadingStats || !stats ? (
-            Array.from({ length: 4 }).map((_, i) => <StatCardSkeleton key={i} />)
+            Array.from({ length: 3 }).map((_, i) => <StatCardSkeleton key={i} />)
           ) : (
             <>
               <DashboardStatCard
@@ -84,14 +84,6 @@ export default function DashboardPage() {
               />
               <DashboardStatCard
                 index={1}
-                title="Current Stock Value"
-                value={`₹${stats.currentStockValue.toLocaleString('en-IN')}`}
-                icon={IndianRupee}
-                trend={stats.currentStockValueTrend}
-                trendDescription="from last month"
-              />
-              <DashboardStatCard
-                index={2}
                 title="Today's Dispatch"
                 value={`${stats.todaysDispatch} Challans`}
                 icon={Truck}
@@ -99,7 +91,7 @@ export default function DashboardPage() {
                 trendDescription="from yesterday"
               />
               <DashboardStatCard
-                index={3}
+                index={2}
                 title="Low Stock Items"
                 value={stats.lowStockItems}
                 icon={TriangleAlert}

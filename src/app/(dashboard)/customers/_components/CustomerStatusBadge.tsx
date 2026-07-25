@@ -1,6 +1,7 @@
 import { Badge } from '@/src/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { CustomerStatus } from '../_services/customerService';
+
+type CustomerStatus = 'Active' | 'Inactive' | 'New';
 
 interface CustomerStatusBadgeProps {
   status: CustomerStatus;

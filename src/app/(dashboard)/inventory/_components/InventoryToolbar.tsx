@@ -1,14 +1,7 @@
 import { Table } from '@tanstack/react-table';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
-import { X, SlidersHorizontal } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
+import { Download, X, SlidersHorizontal } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -18,10 +11,12 @@ import {
 
 interface InventoryToolbarProps<TData> {
   table: Table<TData>;
+  onExportPdf: () => void;
 }
 
 export function InventoryToolbar<TData>({
   table,
+  onExportPdf,
 }: InventoryToolbarProps<TData>) {
   const isFiltered = table.getState().columnFilters.length > 0;
 
@@ -36,27 +31,6 @@ export function InventoryToolbar<TData>({
           }
           className="h-9 w-[150px] lg:w-[350px]"
         />
-        <Select
-          value={(table.getColumn('status')?.getFilterValue() as string) ?? 'all'}
-          onValueChange={(value) => {
-            if (value === 'all') {
-              table.getColumn('status')?.setFilterValue(undefined);
-            } else {
-              table.getColumn('status')?.setFilterValue(value);
-            }
-          }}
-        >
-          <SelectTrigger className="h-9 w-[150px]">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="healthy">Healthy</SelectItem>
-            <SelectItem value="low">Low Stock</SelectItem>
-            <SelectItem value="critical">Critical</SelectItem>
-          </SelectContent>
-        </Select>
-
         {isFiltered && (
           <Button
             variant="ghost"
@@ -68,9 +42,13 @@ export function InventoryToolbar<TData>({
           </Button>
         )}
       </div>
+      <Button variant="outline" size="sm" className="ml-auto h-9" onClick={onExportPdf}>
+        <Download className="mr-2 h-4 w-4" />
+        Export PDF
+      </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="ml-auto hidden h-9 lg:flex">
+          <Button variant="outline" size="sm" className="hidden h-9 lg:flex">
             <SlidersHorizontal className="mr-2 h-4 w-4" />
             View
           </Button>

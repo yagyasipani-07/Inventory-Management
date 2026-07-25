@@ -2,7 +2,7 @@ import { Customer } from '../../customers/_services/customerService';
 import { ChallanItem } from '../_services/challanService';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
-import { MapPin, Truck, Calendar, User, Package } from 'lucide-react';
+import { MapPin, Phone, Calendar, User, Package } from 'lucide-react';
 
 interface ReviewStepProps {
   customer: Customer | null;
@@ -36,7 +36,7 @@ export function ReviewStep({ customer, items, notes }: ReviewStepProps) {
                 <MapPin className="h-4 w-4" /> {customer.city}
               </span>
               <span className="flex items-center gap-2">
-                <Truck className="h-4 w-4" /> Transport: {customer.preferredTransport}
+                <Phone className="h-4 w-4" /> Customer Number: {customer.phone || 'N/A'}
               </span>
             </div>
           </CardContent>

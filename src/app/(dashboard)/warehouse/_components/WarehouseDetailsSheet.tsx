@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { WarehouseItem } from '../_services/warehouseService';
 import { useStockMovement } from '../_hooks/useWarehouse';
 import { StockMovementTimeline } from './StockMovementTimeline';
-import { StockStatusBadge } from './StockStatusBadge';
 import { StockAdjustmentDialog } from '../../inventory/_components/StockAdjustmentDialog';
 import { Button } from '@/src/components/ui/button';
 import {
@@ -13,7 +12,7 @@ import {
   SheetTitle,
 } from '@/src/components/ui/sheet';
 import Link from 'next/link';
-import { ArrowRightLeft, ExternalLink, MapPin, Box, Archive, Ruler } from 'lucide-react';
+import { ArrowRightLeft, ExternalLink, Box, Ruler } from 'lucide-react';
 import { ScrollArea } from '@/src/components/ui/scroll-area';
 
 interface WarehouseDetailsSheetProps {
@@ -35,10 +34,7 @@ export function WarehouseDetailsSheet({ product, isOpen, onClose, onStockAdjuste
         <SheetContent className="w-full sm:max-w-md overflow-hidden flex flex-col p-0">
           <SheetHeader className="px-6 py-4 border-b">
             <SheetTitle className="text-xl">{product.name}</SheetTitle>
-            <SheetDescription className="text-base text-muted-foreground flex justify-between items-center">
-              <span>{product.code}</span>
-              <StockStatusBadge available={product.availableStock} min={product.minStock} />
-            </SheetDescription>
+            <SheetDescription className="text-base text-muted-foreground">{product.code}</SheetDescription>
           </SheetHeader>
 
           <ScrollArea className="flex-1">
@@ -46,24 +42,12 @@ export function WarehouseDetailsSheet({ product, isOpen, onClose, onStockAdjuste
               {/* Warehouse Details */}
               <div className="space-y-3">
                 <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Stock Details</h3>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div className="flex flex-col gap-1 rounded-lg border p-3 bg-muted/30">
                     <span className="text-sm text-muted-foreground flex items-center gap-2">
                       <Box className="w-4 h-4" /> Available
                     </span>
                     <span className="text-2xl font-bold">{product.availableStock}</span>
-                  </div>
-                  <div className="flex flex-col gap-1 rounded-lg border p-3 bg-muted/30">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Archive className="w-4 h-4" /> Reserved
-                    </span>
-                    <span className="text-2xl font-bold">{product.reservedStock}</span>
-                  </div>
-                  <div className="col-span-2 flex flex-col gap-1 rounded-lg border p-3 bg-muted/30">
-                    <span className="text-sm text-muted-foreground flex items-center gap-2">
-                      <MapPin className="w-4 h-4" /> Warehouse Location
-                    </span>
-                    <span className="text-lg font-semibold">{product.location}</span>
                   </div>
                 </div>
               </div>

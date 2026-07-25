@@ -1,6 +1,5 @@
 import { Product } from '../_services/inventoryService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
-import { ProductStatusBadge } from './ProductStatusBadge';
 import { Package, MapPin, Tag, Activity, History } from 'lucide-react';
 
 interface ProductDetailsProps {
@@ -21,6 +20,15 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {product.photoUrl && (
+              <div className="md:col-span-2">
+                <img
+                  src={product.photoUrl}
+                  alt={product.name}
+                  className="h-48 w-full rounded-lg border object-cover"
+                />
+              </div>
+            )}
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Product Code</p>
               <p className="text-base font-semibold">{product.code}</p>
@@ -28,12 +36,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Product Name</p>
               <p className="text-base font-semibold">{product.name}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <div>
-                <ProductStatusBadge currentStock={product.currentStock} />
-              </div>
             </div>
             <div className="space-y-1">
               <p className="text-sm font-medium text-muted-foreground">Last Updated</p>
@@ -101,10 +103,6 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Current Stock</span>
               <span className="text-2xl font-bold">{product.currentStock}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Reserved (Challans)</span>
-              <span className="text-xl font-semibold text-muted-foreground">{product.reservedStock}</span>
             </div>
             <div className="pt-4 border-t flex items-center justify-between">
               <span className="font-semibold">Available to Dispatch</span>

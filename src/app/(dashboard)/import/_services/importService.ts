@@ -145,6 +145,7 @@ export const importService = {
       productCode: String(row.productCode || row["Product Code"] || "").trim(),
       mould: String(row.productName || row["Product Name"] || "").trim(),
       productQty: Number(row.currentStock || row["Current Stock"] || row.stock || 0),
+      lowStockThreshold: Number(row.minStock || row["Minimum Stock"] || 0) || undefined,
     }));
 
     await apiClient.post(endpoints.import.products, { rows });
@@ -175,5 +176,42 @@ export const importService = {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  },
+
+  downloadInventoryTemplate(format: "csv" | "excel") {
+    const rows = [
+      {
+        "Product Code": "MR-18-84",
+        "Product Name": "18mm MR Grade Plywood",
+        "Current Stock": 100,
+        "Minimum Stock": 20,
+      },
+      {
+        "Product Code": "BWP-12-84",
+        "Product Name": "12mm BWP Plywood",
+        "Current Stock": 75,
+        "Minimum Stock": 15,
+      },
+    ];
+
+    if (format === "csv") {
+      const csv = Papa.unparse(rows);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "inventory-import-template.csv");
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Inventory Template");
+    XLSX.writeFile(workbook, "inventory-import-template.xlsx");
   }
 };
