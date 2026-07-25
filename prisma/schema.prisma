@@ -65,6 +65,7 @@ model Product {
 
 model Customer {
   id                 String   @id @default(uuid())
+  customerNumber     String?  @unique
   name               String
   gst                String?
   address            String?

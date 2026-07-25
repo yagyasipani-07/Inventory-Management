@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useWarehouseStock, useWarehouseSummary } from '../_hooks/useWarehouse';
 import { warehouseService, WarehouseItem } from '../_services/warehouseService';
 import { WarehouseSummaryCards } from './WarehouseSummaryCards';
@@ -18,15 +18,24 @@ export function WarehouseClient() {
   const { data: summary, isLoading: isSummaryLoading, error: summaryError, refetch: refetchSummary } = useWarehouseSummary();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState<WarehouseItem | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Debounce the search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const filteredStock = useMemo(() => {
     if (!stock) return [];
 
     return stock.filter((item) => {
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
+      if (debouncedSearchQuery) {
+        const query = debouncedSearchQuery.toLowerCase();
         const matchesSearch = item.name.toLowerCase().includes(query);
         
         if (!matchesSearch) return false;

@@ -2,6 +2,7 @@ import { apiClient, endpoints } from '@/src/lib/api';
 
 export interface Customer {
   id: string;
+  customerNumber: string;
   name: string;
   city: string;
   phone: string;
@@ -16,6 +17,7 @@ export type CustomerFormData = Omit<Customer, 'id' | 'totalChallans' | 'lastDisp
 function mapToUiCustomer(dbCustomer: any): Customer {
   return {
     id: dbCustomer.id,
+    customerNumber: dbCustomer.customerNumber || `CUST-${dbCustomer.id.substring(0,6).toUpperCase()}`,
     name: dbCustomer.name || 'Unknown',
     city: dbCustomer.city || 'N/A',
     phone: dbCustomer.phone || '',
@@ -42,6 +44,7 @@ export const customerService = {
 
   async createCustomer(data: CustomerFormData): Promise<Customer> {
     const payload = {
+      customerNumber: data.customerNumber,
       name: data.name,
       city: data.city,
       phone: data.phone,

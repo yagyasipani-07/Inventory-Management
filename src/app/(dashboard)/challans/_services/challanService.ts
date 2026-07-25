@@ -67,8 +67,10 @@ function mapToUiChallan(dbChallan: any): Challan {
       id: li.id,
       productId: li.productId,
       productName: li.product?.mould || 'Product',
-      thickness: li.product?.productCode ? `${li.product.productCode.split('-')[1]}mm` : '',
-      size: li.product?.productCode ? `${li.product.productCode.split('-')[2][0]}x${li.product.productCode.split('-')[2][1]}` : '',
+      thickness: li.product?.productCode && li.product.productCode.includes('-') ? `${li.product.productCode.split('-')[1]}mm` : 'N/A',
+      size: li.product?.productCode && li.product.productCode.split('-').length >= 3 
+        ? `${li.product.productCode.split('-')[2][0]}x${li.product.productCode.split('-')[2][1]}` 
+        : 'N/A',
       quantity: li.qty,
       rate: li.rate || '',
       amount: li.amount || '',

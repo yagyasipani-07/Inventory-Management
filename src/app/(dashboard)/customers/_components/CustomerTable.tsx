@@ -65,8 +65,15 @@ export function CustomerTable({ data, onViewDetails, onEdit, onDelete }: Custome
         ),
       },
       {
-        accessorKey: 'phone',
+        accessorKey: 'customerNumber',
         header: 'Customer Number',
+        cell: ({ row }) => (
+          <span className="text-muted-foreground">{row.getValue('customerNumber') || 'N/A'}</span>
+        ),
+      },
+      {
+        accessorKey: 'phone',
+        header: 'Phone Number',
         cell: ({ row }) => (
           <span className="text-muted-foreground">{row.getValue('phone') || 'N/A'}</span>
         ),

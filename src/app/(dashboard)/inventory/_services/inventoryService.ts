@@ -28,17 +28,17 @@ function mapToUiProduct(dbProduct: any): Product {
     name: dbProduct.mould || 'Plywood',
     photoUrl: dbProduct.photoUrl || '',
     thickness: parts[1] ? `${parts[1]}mm` : '18mm',
-    length: parts[2] ? parts[2][0] : '8',
-    width: parts[2] ? parts[2][1] : '4',
-    size: parts[2] ? `${parts[2][0]}x${parts[2][1]}` : '8x4',
+    length: parts[2]?.[0] || '8',
+    width: parts[2]?.[1] || '4',
+    size: parts[2] && parts[2].length >= 2 ? `${parts[2][0]}x${parts[2][1]}` : '8x4',
     currentStock: dbProduct.currentStock || 0,
     reservedStock: dbProduct.reservedStock || 0,
-    availableStock: (dbProduct.currentStock || 0) - (dbProduct.reservedStock || 0),
+    availableStock: Math.max(0, (dbProduct.currentStock || 0) - (dbProduct.reservedStock || 0)),
     unit: 'Pieces',
     openingStock: dbProduct.productQty || 0,
     minStock: dbProduct.lowStockThreshold || 100,
     description: `Pack Type: ${dbProduct.packType || 'Standard'}`,
-    lastUpdated: dbProduct.createdAt,
+    lastUpdated: dbProduct.createdAt || new Date().toISOString(),
   };
 }
 

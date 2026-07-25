@@ -16,9 +16,10 @@ import { CustomerFormData } from '../_services/customerService';
 import { Loader2 } from 'lucide-react';
 
 const customerSchema = z.object({
+  customerNumber: z.string().min(1, 'Customer number is required').regex(/^[a-zA-Z0-9-_]+$/, 'Must be alphanumeric'),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
-  phone: z.string().min(7, 'Customer number must be at least 7 digits'),
+  phone: z.string().min(7, 'Phone number must be at least 7 digits'),
   notes: z.string().optional(),
 });
 
@@ -38,6 +39,7 @@ export function CustomerForm({
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerSchema),
     defaultValues: {
+      customerNumber: initialData?.customerNumber || '',
       name: initialData?.name || '',
       city: initialData?.city || '',
       phone: initialData?.phone || '',
@@ -79,10 +81,24 @@ export function CustomerForm({
 
           <FormField
             control={form.control}
+            name="customerNumber"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Customer Number (Unique ID)</FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g. CUST-001" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="phone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Customer Number</FormLabel>
+                <FormLabel>Phone Number</FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. 9876543210" {...field} />
                 </FormControl>
