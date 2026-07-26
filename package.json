@@ -8,12 +8,11 @@
     "start": "next start",
     "lint": "next lint",
     "pnpm": {
-     "onlyBuiltDependencies": 
-     [
-       "sharp",
-       "unrs-resolver"
-     ]
-   },
+      "onlyBuiltDependencies": [
+        "sharp",
+        "unrs-resolver"
+      ]
+    },
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {
@@ -67,6 +66,7 @@
     "autoprefixer": "^10.4.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.1.0",
+    "pg": "^8.22.0",
     "postcss": "^8.4.0",
     "prettier": "^3.4.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
