@@ -111,7 +111,8 @@ export const challanService = {
   },
 
   deleteChallan: async (id: string): Promise<void> => {
-    console.warn(`Delete challan ${id} not supported by backend.`);
+    const service = getService();
+    await service.deleteChallan(id);
   },
   
   duplicateChallan: async (id: string): Promise<Challan> => {

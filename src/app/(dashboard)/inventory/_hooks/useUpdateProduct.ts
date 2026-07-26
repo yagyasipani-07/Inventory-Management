@@ -10,6 +10,10 @@ export function useUpdateProduct() {
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
+      queryClient.invalidateQueries({ queryKey: ['inventoryTrend'] });
       
       queryClient.setQueryData<Product[]>(['products'], (oldData) => {
         return oldData?.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));

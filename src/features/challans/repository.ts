@@ -98,4 +98,14 @@ export class ChallanRepository {
 
     return this.getChallanById((challan as any).id);
   }
+
+  async softDeleteChallan(id: string): Promise<void> {
+    const { error } = await this.supabase
+      .from("challans")
+      .update({ deleted_at: new Date().toISOString() } as never)
+      .eq("id", id);
+
+    if (error) throw new DatabaseError("Failed to delete challan", error);
+  }
 }
+

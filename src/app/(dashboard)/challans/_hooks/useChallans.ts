@@ -26,6 +26,9 @@ export function useCreateChallan() {
     mutationFn: (data: ChallanFormData) => challanService.createChallan(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentChallans'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       toast.success('Challan created successfully');
     },
     onError: () => {
@@ -42,6 +45,9 @@ export function useUpdateChallan() {
       challanService.updateChallan(id, data),
     onSuccess: (updatedChallan) => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentChallans'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       queryClient.setQueryData([...CHALLANS_QUERY_KEY, updatedChallan.id], updatedChallan);
       toast.success('Challan updated successfully');
     },
@@ -59,6 +65,9 @@ export function useUpdateChallanStatus() {
       challanService.updateStatus(id, status),
     onSuccess: (updatedChallan) => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentChallans'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       queryClient.setQueryData([...CHALLANS_QUERY_KEY, updatedChallan.id], updatedChallan);
       toast.success(`Challan marked as ${updatedChallan.status}`);
     },
@@ -75,6 +84,9 @@ export function useDeleteChallan() {
     mutationFn: (id: string) => challanService.deleteChallan(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentChallans'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       toast.success('Challan deleted successfully');
     },
     onError: () => {
@@ -90,6 +102,9 @@ export function useDuplicateChallan() {
     mutationFn: (id: string) => challanService.duplicateChallan(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentChallans'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       toast.success('Challan duplicated as Draft');
     },
     onError: () => {

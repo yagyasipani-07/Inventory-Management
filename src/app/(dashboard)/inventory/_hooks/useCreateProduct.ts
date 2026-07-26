@@ -10,6 +10,10 @@ export function useCreateProduct() {
     onSuccess: (newProduct) => {
       // Invalidate and refetch
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
+      queryClient.invalidateQueries({ queryKey: ['inventoryTrend'] });
       // Optionally update cache directly for immediate feedback
       queryClient.setQueryData<Product[]>(['products'], (oldData) => {
         return oldData ? [newProduct, ...oldData] : [newProduct];

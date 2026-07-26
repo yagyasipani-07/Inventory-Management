@@ -51,14 +51,27 @@ export const dashboardService = {
     const supabase = getClient();
     
     // Total Products
-    const { count: productCount } = await supabase.from('products').select('*', { count: 'exact', head: true });
+    const { count: productCount } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .is('deleted_at', null)
+      .eq('active_status', true);
     
     // Low Stock (using warehouse_stock view logic)
-    const { count: lowStockCount } = await supabase.from('warehouse_stock').select('*', { count: 'exact', head: true }).lt('current_quantity', 10);
+    const { count: lowStockCount } = await supabase
+      .from('warehouse_stock')
+      .select('*, products!inner(deleted_at, active_status)', { count: 'exact', head: true })
+      .lt('current_quantity', 10)
+      .is('products.deleted_at', null)
+      .eq('products.active_status', true);
     
     // Today's Dispatch
     const today = new Date().toISOString().split('T')[0];
-    const { count: dispatchCount } = await supabase.from('challans').select('*', { count: 'exact', head: true }).eq('dispatch_date', today);
+    const { count: dispatchCount } = await supabase
+      .from('challans')
+      .select('*', { count: 'exact', head: true })
+      .eq('dispatch_date', today)
+      .is('deleted_at', null);
 
     return {
       totalProducts: productCount || 0,
@@ -87,7 +100,13 @@ export const dashboardService = {
 
   getLowStockProducts: async (): Promise<LowStockProduct[]> => {
     const supabase = getClient();
-    const { data } = await supabase.from('warehouse_stock').select('*, products(product_code, product_name)').lt('current_quantity', 20).limit(5);
+    const { data } = await supabase
+      .from('warehouse_stock')
+      .select('*, products!inner(product_code, product_name, deleted_at, active_status)')
+      .lt('current_quantity', 20)
+      .is('products.deleted_at', null)
+      .eq('products.active_status', true)
+      .limit(5);
     
     return (data || []).map((item: any) => ({
       id: item.product_id,
@@ -103,6 +122,7 @@ export const dashboardService = {
     const supabase = getClient();
     const { data } = await supabase.from('challans')
       .select('id, challan_number, created_at, status, customers(customer_name), challan_items(quantity)')
+      .is('deleted_at', null)
       .order('created_at', { ascending: false })
       .limit(5);
 

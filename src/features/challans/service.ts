@@ -41,6 +41,14 @@ export class ChallanService {
     }
   }
 
+  async deleteChallan(id: string) {
+    try {
+      await this.repository.softDeleteChallan(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: any): Error {
     if (error instanceof AppError) return error;
     if (error.name === "ZodError") {
