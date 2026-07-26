@@ -28,6 +28,8 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
   const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
   const [dispatchDateInput, setDispatchDateInput] = useState('');
   const [transportInput, setTransportInput] = useState('');
+  const [transportNameInput, setTransportNameInput] = useState('');
+  const [vehicleNumberInput, setVehicleNumberInput] = useState('');
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading details...</div>;
   if (error || !challan) return <div className="p-8 text-center text-destructive">Error loading challan details.</div>;
@@ -35,6 +37,8 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
   const openDispatchModal = () => {
     setDispatchDateInput(challan.dispatchDate ? challan.dispatchDate.split('T')[0] : new Date().toISOString().split('T')[0]);
     setTransportInput(challan.transport || '');
+    setTransportNameInput(challan.transportName || '');
+    setVehicleNumberInput(challan.vehicleNumber || '');
     setIsDispatchModalOpen(true);
   };
 
@@ -45,8 +49,10 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
           ? new Date().toISOString().split('T')[0]
           : challan.dispatchDate;
       await updateStatus.mutateAsync({ id: challan.id, status: newStatus, dispatchDate: dDate });
-    } catch (err) {
+      toast.success(`Challan status updated to ${newStatus}`);
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || 'Failed to update status');
     }
   };
 
@@ -55,12 +61,14 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
       await updateDispatchInfo.mutateAsync({
         id: challan.id,
         dispatchDate: dispatchDateInput || null,
-        transport: transportInput,
+        transport: transportInput || `${transportNameInput} ${vehicleNumberInput}`.trim(),
         status: markDispatched ? 'Dispatched' : undefined,
       });
       setIsDispatchModalOpen(false);
-    } catch (err) {
+      toast.success(markDispatched ? 'Challan marked as Dispatched!' : 'Dispatch info updated');
+    } catch (err: any) {
       console.error(err);
+      toast.error(err.message || 'Failed to save dispatch info');
     }
   };
 
@@ -205,6 +213,18 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
                 <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="font-medium">Transport:</span> {challan.transport || 'Not specified'}
               </div>
+              {challan.transportName && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium">Transport Name:</span> {challan.transportName}
+                </div>
+              )}
+              {challan.vehicleNumber && (
+                <div className="flex items-center gap-3 text-sm">
+                  <Truck className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="font-medium">Vehicle No:</span> {challan.vehicleNumber}
+                </div>
+              )}
               <div className="flex items-center gap-3 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="font-medium">Dispatch Date:</span>{' '}
@@ -245,10 +265,28 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="dispatch-transport">Mode of Transport / Vehicle Info</Label>
+              <Label htmlFor="transport-name">Transport Name / Company</Label>
+              <Input
+                id="transport-name"
+                placeholder="e.g. Bluedart, VRL Logistics, Customer Pickup..."
+                value={transportNameInput}
+                onChange={(e) => setTransportNameInput(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="vehicle-number">Vehicle Number</Label>
+              <Input
+                id="vehicle-number"
+                placeholder="e.g. DL 01 AB 1234"
+                value={vehicleNumberInput}
+                onChange={(e) => setVehicleNumberInput(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="dispatch-transport">Mode of Transport / Notes</Label>
               <Input
                 id="dispatch-transport"
-                placeholder="e.g. Tata Ace DL01AB1234, Customer Pickup..."
+                placeholder="e.g. Tata Ace, Road, Special instructions..."
                 value={transportInput}
                 onChange={(e) => setTransportInput(e.target.value)}
               />

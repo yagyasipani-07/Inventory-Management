@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { PageHeader } from '@/src/components/shared/page-header';
 import { ProductDetails } from '../_components/ProductDetails';
 import { useProduct } from '../_hooks/useProduct';
@@ -8,7 +8,8 @@ import { InventoryFormSkeleton } from '../_components/InventorySkeleton';
 import { InventoryError } from '../_components/InventoryError';
 import { Button } from '@/src/components/ui/button';
 import Link from 'next/link';
-import { Edit } from 'lucide-react';
+import { Edit, SlidersHorizontal } from 'lucide-react';
+import { StockAdjustmentDialog } from '../_components/StockAdjustmentDialog';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -17,6 +18,7 @@ interface ProductPageProps {
 export default function ProductPage({ params }: ProductPageProps) {
   const resolvedParams = use(params);
   const { data: product, isLoading, isError, refetch } = useProduct(resolvedParams.id);
+  const [isAdjustOpen, setIsAdjustOpen] = useState(false);
 
   if (isError) {
     return (
@@ -46,6 +48,10 @@ export default function ProductPage({ params }: ProductPageProps) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => setIsAdjustOpen(true)}>
+            <SlidersHorizontal className="mr-2 h-4 w-4" />
+            Adjust Stock
+          </Button>
           <Button size="sm" asChild>
             <Link href={`/inventory/${product.id}/edit`}>
               <Edit className="mr-2 h-4 w-4" />
@@ -56,6 +62,14 @@ export default function ProductPage({ params }: ProductPageProps) {
       </div>
 
       <ProductDetails product={product} />
+
+      <StockAdjustmentDialog
+        productId={product.id}
+        productName={product.name}
+        currentStock={product.currentStock}
+        isOpen={isAdjustOpen}
+        onOpenChange={setIsAdjustOpen}
+      />
     </div>
   );
 }

@@ -55,7 +55,15 @@ export class ChallanService {
 
   async updateChallanDispatchInfo(
     id: string,
-    data: { dispatch_date?: string | null; notes?: string | null; status?: string }
+    data: {
+      dispatch_date?: string | null;
+      notes?: string | null;
+      status?: string;
+      transport?: string;
+      transport_name?: string;
+      vehicle_number?: string;
+      warehouse_id?: string;
+    }
   ) {
     try {
       return await this.repository.updateChallanDispatchInfo(id, data);

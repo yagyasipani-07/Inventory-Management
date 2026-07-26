@@ -110,6 +110,13 @@ export const importService = {
     const rows = data.map(row => ({
       product_code: String(row.productCode || row["Product Code"] || "").trim(),
       product_name: String(row.productName || row["Product Name"] || "").trim(),
+      category: String(row.category || row["Category"] || "Plywood").trim(),
+      brand: String(row.brand || row["Brand"] || "Paras").trim(),
+      thickness: Number(row.thickness || row["Thickness"] || 18),
+      length: Number(row.length || row["Length"] || 8),
+      width: Number(row.width || row["Width"] || 4),
+      unit: String(row.unit || row["Unit"] || "Sheets").trim(),
+      active_status: true,
     }));
 
     // Perform bulk upsert for products. Warehouse stock initialization should ideally be handled next.
@@ -154,8 +161,42 @@ export const importService = {
 
   downloadInventoryTemplate(format: "csv" | "excel") {
     const rows = [
-      { "Product Code": "MR-18-84", "Product Name": "18mm MR Grade Plywood", "Current Stock": 100, "Minimum Stock": 20 },
-      { "Product Code": "BWP-12-84", "Product Name": "12mm BWP Plywood", "Current Stock": 75, "Minimum Stock": 15 },
+      {
+        "Product Code": "MR-18-84",
+        "Product Name": "18mm MR Grade Plywood",
+        "Category": "Plywood",
+        "Brand": "CenturyPly",
+        "Thickness": 18,
+        "Length": 8,
+        "Width": 4,
+        "Unit": "Sheets",
+        "Current Stock": 100,
+        "Minimum Stock": 20,
+      },
+      {
+        "Product Code": "BWP-12-84",
+        "Product Name": "12mm BWP Plywood",
+        "Category": "Plywood",
+        "Brand": "Greenply",
+        "Thickness": 12,
+        "Length": 8,
+        "Width": 4,
+        "Unit": "Sheets",
+        "Current Stock": 75,
+        "Minimum Stock": 15,
+      },
+      {
+        "Product Code": "LAM-01-SF",
+        "Product Name": "1mm Suede Finish Laminate",
+        "Category": "Laminate",
+        "Brand": "Merino",
+        "Thickness": 1,
+        "Length": 8,
+        "Width": 4,
+        "Unit": "Sheets",
+        "Current Stock": 200,
+        "Minimum Stock": 50,
+      },
     ];
 
     if (format === "csv") {

@@ -9,12 +9,17 @@ export function PrintableTemplate({ challan }: PrintableTemplateProps) {
   return (
     <div className="bg-white text-black p-8 max-w-[210mm] mx-auto min-h-[297mm]">
       {/* Header */}
-      <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
-        <div>
-          <h1 className="text-3xl font-bold uppercase tracking-wider">Paras Plywoods</h1>
-          <p className="text-sm mt-1">123 Timber Market, Industrial Area</p>
-          <p className="text-sm">New Delhi, 110001</p>
-          <p className="text-sm">Ph: +91 98765 43210</p>
+      <div className="flex justify-between items-start border-b-2 border-black pb-6 mb-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-black text-white flex items-center justify-center rounded-lg font-bold text-2xl tracking-wider shrink-0">
+            DP
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold uppercase tracking-wider">Decorative Panels Inventory ERP</h1>
+            <p className="text-sm font-semibold text-gray-800 mt-0.5">Paras Plywoods & Decorative Panels</p>
+            <p className="text-xs text-gray-600 mt-0.5">123 Timber Market, Industrial Area, New Delhi - 110001</p>
+            <p className="text-xs text-gray-600">Ph: +91 98765 43210 | Email: info@decorativepanels.erp</p>
+          </div>
         </div>
         <div className="text-right">
           <h2 className="text-2xl font-bold uppercase text-gray-600 mb-2">Delivery Challan</h2>
@@ -31,6 +36,18 @@ export function PrintableTemplate({ challan }: PrintableTemplateProps) {
             )}
             <span className="font-semibold">Transport:</span>
             <span>{challan.transport || 'N/A'}</span>
+            {challan.transportName && (
+              <>
+                <span className="font-semibold">Transport Name:</span>
+                <span>{challan.transportName}</span>
+              </>
+            )}
+            {challan.vehicleNumber && (
+              <>
+                <span className="font-semibold">Vehicle No:</span>
+                <span>{challan.vehicleNumber}</span>
+              </>
+            )}
           </div>
         </div>
       </div>

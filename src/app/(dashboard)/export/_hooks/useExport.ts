@@ -13,6 +13,7 @@ interface ExportState {
   setFormat: (format: ExportFormat) => void;
   setDateRange: (range: { from: Date; to: Date } | null) => void;
   setStatus: (status: string | null) => void;
+  setGroupBy: (groupBy: "category" | "product_name" | "none") => void;
   
   loadPreview: () => Promise<void>;
   executeExport: () => Promise<void>;
@@ -24,6 +25,7 @@ export const useExport = create<ExportState>((set, get) => ({
     format: "excel",
     dateRange: null,
     status: null,
+    groupBy: "none",
   },
   isExporting: false,
   previewData: [],
@@ -33,6 +35,7 @@ export const useExport = create<ExportState>((set, get) => ({
   setFormat: (format) => set((state) => ({ config: { ...state.config, format } })),
   setDateRange: (dateRange) => set((state) => ({ config: { ...state.config, dateRange } })),
   setStatus: (status) => set((state) => ({ config: { ...state.config, status } })),
+  setGroupBy: (groupBy) => set((state) => ({ config: { ...state.config, groupBy } })),
 
   loadPreview: async () => {
     const { config } = get();

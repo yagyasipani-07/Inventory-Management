@@ -11,6 +11,7 @@ export interface ExportConfig {
   format: ExportFormat;
   dateRange: { from: Date; to: Date } | null;
   status: string | null;
+  groupBy?: "category" | "product_name" | "none";
 }
 
 const getClient = () => createBrowserClient();
@@ -19,25 +20,50 @@ export const exportService = {
   async fetchData(config: ExportConfig): Promise<any[]> {
     const supabase = getClient();
     
-    if (config.dataset === "Inventory" || config.dataset === "Warehouse Stock") {
-      const { data } = await supabase.from('warehouse_stock').select('*, products(*)');
-      return (data || []).map((p: any) => {
-        if (config.dataset === "Inventory") {
-          return {
-            "Product Code": p.products?.product_code,
-            "Product Name": p.products?.product_name || "N/A",
-            "Current Stock": p.current_quantity || 0,
-            "Available Stock": (p.current_quantity || 0) - (p.reserved_quantity || 0),
-          };
-        } else {
-          return {
-            "Product Code": p.products?.product_code,
-            "Warehouse": "Main Warehouse", // Hardcoded for now
-            "Available Qty": (p.current_quantity || 0) - (p.reserved_quantity || 0),
-            "Total Qty": p.current_quantity || 0,
-          };
-        }
+    if (config.dataset === "Inventory") {
+      const { data: products } = await supabase.from('products').select('*').is('deleted_at', null);
+      const { data: stocks } = await supabase.from('warehouse_stock').select('*');
+      
+      let rows = (products || []).map((p: any) => {
+        const productStocks = (stocks || []).filter((s: any) => s.product_id === p.id);
+        const totalQty = productStocks.reduce((acc: number, s: any) => acc + (s.current_quantity || 0), 0);
+        const reservedQty = productStocks.reduce((acc: number, s: any) => acc + (s.reserved_quantity || 0), 0);
+        return {
+          "Category": p.category || "Uncategorized",
+          "Product Code": p.product_code,
+          "Product Name": p.product_name || "N/A",
+          "Brand": p.brand || "N/A",
+          "Thickness (mm)": p.thickness || 0,
+          "Current Stock": totalQty,
+          "Reserved Stock": reservedQty,
+          "Available Stock": totalQty - reservedQty,
+        };
       });
+
+      if (config.groupBy === "category") {
+        rows.sort((a, b) => a["Category"].localeCompare(b["Category"]) || a["Product Name"].localeCompare(b["Product Name"]));
+      } else if (config.groupBy === "product_name") {
+        rows.sort((a, b) => a["Product Name"].localeCompare(b["Product Name"]) || a["Category"].localeCompare(b["Category"]));
+      }
+      return rows;
+    } 
+    else if (config.dataset === "Warehouse Stock") {
+      const { data } = await supabase.from('warehouse_stock').select('*, products(*)');
+      let rows = (data || []).map((p: any) => ({
+        "Category": p.products?.category || "Uncategorized",
+        "Product Code": p.products?.product_code || "N/A",
+        "Product Name": p.products?.product_name || "N/A",
+        "Warehouse": "Main Warehouse", // Hardcoded for now
+        "Available Qty": (p.current_quantity || 0) - (p.reserved_quantity || 0),
+        "Total Qty": p.current_quantity || 0,
+      }));
+
+      if (config.groupBy === "category") {
+        rows.sort((a, b) => a["Category"].localeCompare(b["Category"]) || a["Product Name"].localeCompare(b["Product Name"]));
+      } else if (config.groupBy === "product_name") {
+        rows.sort((a, b) => a["Product Name"].localeCompare(b["Product Name"]) || a["Category"].localeCompare(b["Category"]));
+      }
+      return rows;
     } 
     else if (config.dataset === "Customers") {
       const { data } = await supabase.from('customers').select('*');

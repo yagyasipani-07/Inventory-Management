@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 
 export function ExportConfiguration() {
-  const { config, setFormat, setStatus, loadPreview } = useExport();
+  const { config, setFormat, setStatus, setGroupBy, loadPreview } = useExport();
 
   return (
     <div className="rounded-xl border bg-card p-6 shadow-sm">
@@ -61,14 +61,26 @@ export function ExportConfiguration() {
 
         {/* Filters */}
         <div className="space-y-4">
-          <Label className="text-base">Filters (Mocked for Phase 6)</Label>
+          <Label className="text-base">Filters & Grouping</Label>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Date Range</Label>
-              <Button variant="outline" className="w-full justify-start text-left font-normal" disabled>
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                <span>Select range...</span>
-              </Button>
+              <Label className="text-xs text-muted-foreground">Group / Sort By</Label>
+              <Select
+                value={config.groupBy || "none"}
+                onValueChange={(val: any) => {
+                  setGroupBy(val);
+                  loadPreview();
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No Grouping" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Grouping (Default)</SelectItem>
+                  <SelectItem value="category">Group by Category</SelectItem>
+                  <SelectItem value="product_name">Group by Product Name</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">

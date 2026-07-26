@@ -6,14 +6,15 @@ interface AdjustStockParams {
   type: 'increase' | 'decrease';
   amount: number;
   reason: string;
+  purchaseBillNumber?: string;
 }
 
 export function useAdjustStock() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, type, amount, reason }: AdjustStockParams) =>
-      inventoryService.adjustStock(id, type, amount, reason),
+    mutationFn: ({ id, type, amount, reason, purchaseBillNumber }: AdjustStockParams) =>
+      inventoryService.adjustStock(id, type, amount, reason, purchaseBillNumber),
     onSuccess: (updatedProduct) => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] });

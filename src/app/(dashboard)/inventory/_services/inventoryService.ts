@@ -5,7 +5,15 @@ import { Product as DBProduct } from '@/features/inventory/types';
 export type Product = ReturnType<typeof mapToUiProduct>;
 
 // Map database product to the UI product structure expected by components
-function mapToUiProduct(dbProduct: DBProduct) {
+function mapToUiProduct(
+  dbProduct: DBProduct,
+  stockInfo?: { current: number; reserved: number; min: number }
+) {
+  const current = stockInfo?.current || 0;
+  const reserved = stockInfo?.reserved || 0;
+  const available = Math.max(0, current - reserved);
+  const min = stockInfo?.min || 100;
+
   return {
     id: dbProduct.id,
     code: dbProduct.product_code || 'N/A',
@@ -15,12 +23,12 @@ function mapToUiProduct(dbProduct: DBProduct) {
     length: dbProduct.length ? dbProduct.length.toString() : '8',
     width: dbProduct.width ? dbProduct.width.toString() : '4',
     size: (dbProduct.length && dbProduct.width) ? `${dbProduct.length}x${dbProduct.width}` : '8x4',
-    currentStock: 0, // Should be fetched from warehouse_stock
-    reservedStock: 0,
-    availableStock: 0,
+    currentStock: current,
+    reservedStock: reserved,
+    availableStock: available,
     unit: dbProduct.unit || 'Pieces',
     openingStock: 0,
-    minStock: 100,
+    minStock: min,
     description: dbProduct.description || '',
     lastUpdated: dbProduct.updated_at || new Date().toISOString(),
   };
@@ -33,13 +41,17 @@ export const inventoryService = {
   async getProducts() {
     const service = getService();
     const { data } = await service.getProducts({});
-    return data.map(mapToUiProduct);
+    const productIds = data.map((p) => p.id);
+    const stockMap = await service.getProductStocks(productIds);
+    return data.map((p) => mapToUiProduct(p, stockMap[p.id]));
   },
 
   async getProductById(id: string) {
     const service = getService();
     const product = await service.getProduct(id);
-    return product ? mapToUiProduct(product) : undefined;
+    if (!product) return undefined;
+    const stockMap = await service.getProductStocks([id]);
+    return mapToUiProduct(product, stockMap[id]);
   },
 
   async createProduct(data: any) {
@@ -68,7 +80,8 @@ export const inventoryService = {
       product_image_path: data.photoUrl,
       description: data.description,
     });
-    return mapToUiProduct(product);
+    const stockMap = await service.getProductStocks([id]);
+    return mapToUiProduct(product, stockMap[id]);
   },
 
   async deleteProduct(id: string) {
@@ -76,10 +89,22 @@ export const inventoryService = {
     await service.deleteProduct(id);
   },
 
-  async adjustStock(id: string, type: 'increase' | 'decrease', amount: number, reason: string) {
-    // Stock adjustment should be handled via the Warehouse service
-    // For now, this is a stub as per Phase 3 rules (Workflows are in Phase 4)
-    console.warn("Stock adjustment moved to Warehouse Service workflows.");
-    return {} as any;
+  async adjustStock(
+    id: string,
+    type: 'increase' | 'decrease',
+    amount: number,
+    reason: string,
+    purchaseBillNumber?: string
+  ) {
+    const service = getService();
+    await service.adjustStock(id, type, amount, reason, purchaseBillNumber);
+    const product = await service.getProduct(id);
+    const stockMap = await service.getProductStocks([id]);
+    return mapToUiProduct(product, stockMap[id]);
+  },
+
+  async getProductMovements(id: string) {
+    const service = getService();
+    return service.getProductMovements(id);
   },
 };

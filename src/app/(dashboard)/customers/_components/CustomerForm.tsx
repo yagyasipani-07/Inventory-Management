@@ -16,7 +16,7 @@ import { CustomerFormData } from '../_services/customerService';
 import { Loader2 } from 'lucide-react';
 
 const customerSchema = z.object({
-  customerNumber: z.string().min(1, 'Customer number is required').regex(/^[a-zA-Z0-9-_]+$/, 'Must be alphanumeric'),
+  customerNumber: z.string().optional(),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
   phone: z.string().min(7, 'Phone number must be at least 7 digits'),
@@ -84,9 +84,9 @@ export function CustomerForm({
             name="customerNumber"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Customer Number (Unique ID)</FormLabel>
+                <FormLabel>Customer Number (Optional)</FormLabel>
                 <FormControl>
-                  <Input placeholder="e.g. CUST-001" {...field} />
+                  <Input placeholder="Auto-generated if left blank" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

@@ -35,6 +35,7 @@ const adjustStockSchema = z.object({
   type: z.enum(['increase', 'decrease']),
   amount: z.coerce.number().min(1, 'Amount must be at least 1'),
   reason: z.string().min(3, 'Reason is required'),
+  purchaseBillNumber: z.string().optional(),
 });
 
 type AdjustStockFormValues = z.infer<typeof adjustStockSchema>;
@@ -63,6 +64,7 @@ export function StockAdjustmentDialog({
       type: 'increase',
       amount: 1,
       reason: '',
+      purchaseBillNumber: '',
     },
   });
 
@@ -84,6 +86,7 @@ export function StockAdjustmentDialog({
         type: data.type,
         amount: data.amount,
         reason: data.reason,
+        purchaseBillNumber: data.purchaseBillNumber || undefined,
       });
       toast.success('Stock adjusted successfully');
       form.reset();
@@ -140,6 +143,20 @@ export function StockAdjustmentDialog({
                   <FormLabel>Quantity</FormLabel>
                   <FormControl>
                     <Input type="number" min={1} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="purchaseBillNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Purchase Bill Number (Optional)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="e.g. INV-100234" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

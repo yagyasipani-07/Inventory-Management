@@ -109,8 +109,22 @@ export class ChallanRepository {
   }
 
   async updateChallanStatus(id: string, status: string, dispatchDate?: string | null): Promise<any> {
+    if (status === "Dispatched") {
+      const { error: rpcError } = await (this.supabase.rpc as any)("dispatch_challan", {
+        p_challan_id: id,
+        p_warehouse_id: null,
+        p_user_id: null,
+        p_transport: null,
+        p_transport_name: null,
+        p_vehicle_number: null,
+        p_dispatch_date: dispatchDate || new Date().toISOString()
+      });
+      if (rpcError) throw new DatabaseError("Failed to dispatch challan atomically: " + rpcError.message, rpcError);
+      return this.getChallanById(id);
+    }
+
     const updateData: any = { status, updated_at: new Date().toISOString() };
-    if (dispatchDate !== undefined) {
+    if (dispatchDate !== undefined && dispatchDate !== null) {
       updateData.dispatch_date = dispatchDate;
     }
 
@@ -125,12 +139,40 @@ export class ChallanRepository {
 
   async updateChallanDispatchInfo(
     id: string,
-    data: { dispatch_date?: string | null; notes?: string | null; status?: string }
+    data: {
+      dispatch_date?: string | null;
+      notes?: string | null;
+      status?: string;
+      transport?: string;
+      transport_name?: string;
+      vehicle_number?: string;
+      warehouse_id?: string;
+    }
   ): Promise<any> {
+    if (data.status === "Dispatched") {
+      const { error: rpcError } = await (this.supabase.rpc as any)("dispatch_challan", {
+        p_challan_id: id,
+        p_warehouse_id: data.warehouse_id || null,
+        p_user_id: null,
+        p_transport: data.transport || null,
+        p_transport_name: data.transport_name || null,
+        p_vehicle_number: data.vehicle_number || null,
+        p_dispatch_date: data.dispatch_date || new Date().toISOString()
+      });
+      if (rpcError) throw new DatabaseError("Failed to dispatch challan atomically: " + rpcError.message, rpcError);
+      if (data.notes !== undefined) {
+        await this.supabase.from("challans").update({ notes: data.notes } as never).eq("id", id);
+      }
+      return this.getChallanById(id);
+    }
+
     const updateData: any = { updated_at: new Date().toISOString() };
-    if (data.dispatch_date !== undefined) updateData.dispatch_date = data.dispatch_date;
+    if (data.dispatch_date !== undefined && data.dispatch_date !== null) updateData.dispatch_date = data.dispatch_date;
     if (data.notes !== undefined) updateData.notes = data.notes;
     if (data.status !== undefined) updateData.status = data.status;
+    if (data.transport !== undefined) updateData.transport = data.transport;
+    if (data.transport_name !== undefined) updateData.transport_name = data.transport_name;
+    if (data.vehicle_number !== undefined) updateData.vehicle_number = data.vehicle_number;
 
     const { error } = await this.supabase
       .from("challans")

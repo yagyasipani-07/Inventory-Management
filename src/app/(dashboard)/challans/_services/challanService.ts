@@ -21,6 +21,8 @@ export interface Challan {
   customerName: string;
   city: string;
   transport: string;
+  transportName?: string;
+  vehicleNumber?: string;
   status: ChallanStatus;
   dispatchDate: string | null;
   items: ChallanItem[];
@@ -64,13 +66,16 @@ export function decodeNotesAndTransport(dbNotes: string | null): { notes: string
 
 function mapToUiChallan(dbChallan: any): Challan {
   const { notes, transport } = decodeNotesAndTransport(dbChallan.notes);
+  const displayTransport = dbChallan.transport || transport || '';
   return {
     id: dbChallan.id,
     challanNumber: dbChallan.challan_number,
     customerId: dbChallan.customer_id,
     customerName: dbChallan.customers?.customer_name || 'Unknown',
     city: 'N/A', // Update later if city is added to customer
-    transport,
+    transport: displayTransport,
+    transportName: dbChallan.transport_name || '',
+    vehicleNumber: dbChallan.vehicle_number || '',
     status: dbChallan.status as ChallanStatus,
     dispatchDate: dbChallan.dispatch_date,
     items: dbChallan.challan_items?.map((li: any) => ({
@@ -150,7 +155,9 @@ export const challanService = {
     id: string,
     dispatchDate: string | null,
     transport: string,
-    status?: ChallanStatus
+    status?: ChallanStatus,
+    transportName?: string,
+    vehicleNumber?: string
   ): Promise<Challan> => {
     const existing = await challanService.getChallan(id);
     if (!existing) throw new Error('Challan not found');
@@ -161,6 +168,9 @@ export const challanService = {
       dispatch_date: dispatchDate,
       notes: newNotes,
       status: status || existing.status,
+      transport,
+      transport_name: transportName,
+      vehicle_number: vehicleNumber,
     });
     const updated = await challanService.getChallan(id);
     if (!updated) throw new Error('Not found');

@@ -48,8 +48,11 @@ export const customerService = {
 
   async createCustomer(data: CustomerFormData): Promise<Customer> {
     const service = getService();
+    const customerNumber = (data.customerNumber && data.customerNumber.trim() !== '') 
+      ? data.customerNumber.trim() 
+      : `CUST-${Date.now().toString().slice(-6)}`;
     const customer = await service.createCustomer({
-      customer_number: data.customerNumber,
+      customer_number: customerNumber,
       customer_name: data.name,
       phone: data.phone || null,
       notes: data.notes || null,
@@ -62,8 +65,11 @@ export const customerService = {
 
   async updateCustomer(id: string, data: CustomerFormData): Promise<Customer> {
     const service = getService();
+    const customerNumber = (data.customerNumber && data.customerNumber.trim() !== '') 
+      ? data.customerNumber.trim() 
+      : `CUST-${Date.now().toString().slice(-6)}`;
     const customer = await service.updateCustomer(id, {
-      customer_number: data.customerNumber,
+      customer_number: customerNumber,
       customer_name: data.name,
       phone: data.phone || null,
       notes: data.notes || null,

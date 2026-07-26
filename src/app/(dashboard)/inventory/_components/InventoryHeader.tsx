@@ -12,13 +12,17 @@ export function InventoryHeader() {
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" disabled>
-          <Upload className="mr-2 h-4 w-4" />
-          Import CSV
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/import">
+            <Upload className="mr-2 h-4 w-4" />
+            Import Excel/CSV
+          </Link>
         </Button>
-        <Button variant="outline" size="sm" disabled>
-          <Download className="mr-2 h-4 w-4" />
-          Export
+        <Button variant="outline" size="sm" asChild>
+          <Link href="/export">
+            <Download className="mr-2 h-4 w-4" />
+            Export
+          </Link>
         </Button>
         <Button size="sm" asChild>
           <Link href="/inventory/new">

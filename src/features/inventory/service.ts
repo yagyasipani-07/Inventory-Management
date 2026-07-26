@@ -58,6 +58,36 @@ export class InventoryService {
     }
   }
 
+  async getProductStocks(productIds: string[]) {
+    try {
+      return await this.repository.getProductStocks(productIds);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async getProductMovements(productId: string) {
+    try {
+      return await this.repository.getProductMovements(productId);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async adjustStock(
+    productId: string,
+    type: "increase" | "decrease",
+    amount: number,
+    reason: string,
+    purchaseBillNumber?: string
+  ) {
+    try {
+      await this.repository.adjustStock(productId, type, amount, reason, purchaseBillNumber);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: any): Error {
     if (error instanceof AppError) return error;
     if (error.name === "ZodError") {

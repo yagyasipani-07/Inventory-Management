@@ -1,12 +1,15 @@
 import { Product } from '../_services/inventoryService';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/card';
-import { Package, MapPin, Tag, Activity, History } from 'lucide-react';
+import { Package, MapPin, Tag, Activity, History, FileText } from 'lucide-react';
+import { useProductMovements } from '../_hooks/useProductMovements';
 
 interface ProductDetailsProps {
   product: Product;
 }
 
 export function ProductDetails({ product }: ProductDetailsProps) {
+  const { data: movements = [], isLoading: isLoadingMovements } = useProductMovements(product.id);
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
       
@@ -101,7 +104,7 @@ export function ProductDetails({ product }: ProductDetailsProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">Current Stock</span>
+              <span className="text-muted-foreground">Current Stock (All Warehouses)</span>
               <span className="text-2xl font-bold">{product.currentStock}</span>
             </div>
             <div className="pt-4 border-t flex items-center justify-between">
@@ -126,9 +129,49 @@ export function ProductDetails({ product }: ProductDetailsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
-              <p>Stock movement history will be available soon.</p>
-            </div>
+            {isLoadingMovements ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">Loading movements...</div>
+            ) : movements.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground border border-dashed rounded-lg">
+                <p>No stock movements recorded yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-1">
+                {movements.map((movement: any) => (
+                  <div key={movement.id} className="border rounded-lg p-3 text-sm space-y-1">
+                    <div className="flex items-center justify-between font-medium">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className={`inline-block w-2 h-2 rounded-full ${
+                            movement.quantity_change > 0 ? 'bg-emerald-500' : 'bg-rose-500'
+                          }`}
+                        />
+                        {movement.movement_type || 'Adjustment'}
+                      </span>
+                      <span
+                        className={
+                          movement.quantity_change > 0 ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold'
+                        }
+                      >
+                        {movement.quantity_change > 0 ? `+${movement.quantity_change}` : movement.quantity_change}
+                      </span>
+                    </div>
+                    {movement.purchase_bill_number && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium bg-muted/50 px-2 py-0.5 rounded w-fit">
+                        <FileText className="h-3 w-3" />
+                        <span>Bill #: {movement.purchase_bill_number}</span>
+                      </div>
+                    )}
+                    {movement.remarks && (
+                      <p className="text-xs text-muted-foreground">{movement.remarks}</p>
+                    )}
+                    <p className="text-[11px] text-muted-foreground/70">
+                      {new Date(movement.created_at).toLocaleDateString()} {new Date(movement.created_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

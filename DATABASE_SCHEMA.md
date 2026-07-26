@@ -1,6 +1,6 @@
-# Database Schema Documentation: Paras Plywoods ERP
+# Database Schema Documentation: Decorative Panels Inventory ERP
 
-This document outlines the core tables and relationships of the fully normalized Supabase PostgreSQL database for the Paras Plywoods ERP.
+This document outlines the core tables, relationships, and atomic RPC workflows of the fully normalized Supabase PostgreSQL database for the Decorative Panels Inventory ERP (Version 2.1).
 
 ## 1. Products (`products`)
 Stores the catalog of all items available.
@@ -15,7 +15,7 @@ Stores the catalog of all items available.
 * `unit` (VARCHAR)
 * `product_image_path` (TEXT)
 * `active_status` (BOOLEAN)
-* `created_at`, `updated_at`, `deleted_at`
+* `created_at`, `updated_at`, `deleted_at` (TIMESTAMPTZ, soft delete support)
 
 ## 2. Warehouses (`warehouses`)
 Stores physical inventory locations.
@@ -39,7 +39,7 @@ Junction table tracking how much of each product is in which warehouse.
 ## 4. Customers (`customers`)
 Stores buyer information.
 * `id` (UUID, PK)
-* `customer_number` (VARCHAR, Unique)
+* `customer_number` (VARCHAR, Unique) - e.g. 'CUST-001'
 * `customer_name` (VARCHAR)
 * `phone` (VARCHAR)
 * `email` (VARCHAR)
@@ -51,9 +51,13 @@ Outbound dispatch records.
 * `challan_number` (VARCHAR, Unique)
 * `customer_id` (UUID, FK -> customers.id)
 * `status` (ENUM: 'Draft', 'Approved', 'Dispatched', 'Cancelled')
-* `dispatch_date` (DATE)
+* `dispatch_date` (DATE / TIMESTAMPTZ)
+* `transport` (TEXT) - Legacy transport text field
+* `transport_name` (VARCHAR, V2.1) - Structured transport company name
+* `vehicle_number` (VARCHAR, V2.1) - Structured delivery vehicle number
 * `notes` (TEXT)
 * `created_by_id` (UUID, FK -> user_profiles.id)
+* `deleted_at` (TIMESTAMPTZ, V2.1 soft delete support)
 
 ## 6. Challan Items (`challan_items`)
 Line items for outbound dispatches.
@@ -72,6 +76,7 @@ Immutable ledger of all stock changes (audit trail).
 * `quantity_change` (INTEGER)
 * `new_quantity` (INTEGER)
 * `reference_id` (UUID) - Ties to Challan ID or Import ID.
+* `purchase_bill_number` (VARCHAR, V2.1) - Ties stock receipt to vendor invoice bill number.
 * `remarks` (TEXT)
 
 ## 8. Audit Logs (`audit_logs`)
@@ -101,8 +106,14 @@ Extends the native Supabase `auth.users` for RBAC.
 
 ---
 
+## 11. Atomic Workflows & RPC Procedures
+* `dispatch_challan(p_challan_id, p_warehouse_id, p_user_id, p_transport, p_transport_name, p_vehicle_number, p_dispatch_date)`: Atomically checks stock availability in `warehouse_stock`, deducts required quantities, inserts `stock_movements` records (`movement_type = 'Dispatch'`), updates challan status to `'Dispatched'` with vehicle/transport metadata, and logs to `audit_logs`.
+* `adjust_stock(p_warehouse_id, p_product_id, p_quantity_change, p_movement_type, p_remarks, p_user_id)`: Atomically updates physical inventory quantities and creates movement history.
+
+---
+
 ## Role Based Access Control (RLS)
 The database enforces strict RLS:
 - **Administrators**: Full CRUD access across all tables.
 - **Managers**: Can read all, update stock, and process challans. Cannot alter system settings or delete users.
-- **Staff**: Can read inventory/customers, and can create 'Draft' challans. Cannot dispatch stock or alter products.
+- **Staff**: Can read inventory/customers, and can create/update 'Draft' and 'Approved' challans. Cannot dispatch stock without stock availability or alter products.
