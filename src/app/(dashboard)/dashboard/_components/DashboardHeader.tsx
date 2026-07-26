@@ -29,7 +29,7 @@ export function DashboardHeader() {
       description="Warehouse Inventory Overview"
     >
       <div className="flex items-center gap-4">
-        <span className="text-sm text-muted-foreground hidden sm:inline-block">
+        <span className="text-sm text-muted-foreground hidden sm:inline-block" suppressHydrationWarning>
           {currentDate}
         </span>
         <Button

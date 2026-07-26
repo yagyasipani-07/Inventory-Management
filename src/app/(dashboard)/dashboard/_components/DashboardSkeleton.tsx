@@ -18,6 +18,8 @@ export function StatCardSkeleton() {
   );
 }
 
+const CHART_SKELETON_HEIGHTS = [45, 62, 38, 75, 50, 85, 30, 68, 55, 90, 40, 70];
+
 export function ChartSkeleton() {
   return (
     <Card className="rounded-xl shadow-sm border border-border h-[400px]">
@@ -27,8 +29,8 @@ export function ChartSkeleton() {
         </CardTitle>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-4 h-[320px] flex items-end justify-between space-x-2">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <Skeleton key={i} className="w-full bg-muted/50" style={{ height: `${Math.max(20, Math.random() * 100)}%` }} />
+        {CHART_SKELETON_HEIGHTS.map((height, i) => (
+          <Skeleton key={i} className="w-full bg-muted/50" style={{ height: `${height}%` }} />
         ))}
       </CardContent>
     </Card>
