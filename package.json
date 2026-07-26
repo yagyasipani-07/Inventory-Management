@@ -7,6 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "pnpm": {
+     "onlyBuiltDependencies": 
+     [
+       "sharp",
+       "unrs-resolver"
+     ]
+   },
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {
