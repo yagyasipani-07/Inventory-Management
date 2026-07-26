@@ -51,7 +51,7 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex flex-col overflow-hidden">
               <span className="truncate text-sm font-semibold text-sidebar-foreground">
-                Paras Plywoods
+                Decorative Panels
               </span>
               <span className="truncate text-xs text-sidebar-muted">Inventory ERP</span>
             </div>

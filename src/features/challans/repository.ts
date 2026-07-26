@@ -107,5 +107,76 @@ export class ChallanRepository {
 
     if (error) throw new DatabaseError("Failed to delete challan", error);
   }
+
+  async updateChallanStatus(id: string, status: string, dispatchDate?: string | null): Promise<any> {
+    const updateData: any = { status, updated_at: new Date().toISOString() };
+    if (dispatchDate !== undefined) {
+      updateData.dispatch_date = dispatchDate;
+    }
+
+    const { error } = await this.supabase
+      .from("challans")
+      .update(updateData as never)
+      .eq("id", id);
+
+    if (error) throw new DatabaseError("Failed to update challan status", error);
+    return this.getChallanById(id);
+  }
+
+  async updateChallanDispatchInfo(
+    id: string,
+    data: { dispatch_date?: string | null; notes?: string | null; status?: string }
+  ): Promise<any> {
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (data.dispatch_date !== undefined) updateData.dispatch_date = data.dispatch_date;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.status !== undefined) updateData.status = data.status;
+
+    const { error } = await this.supabase
+      .from("challans")
+      .update(updateData as never)
+      .eq("id", id);
+
+    if (error) throw new DatabaseError("Failed to update dispatch info", error);
+    return this.getChallanById(id);
+  }
+
+  async updateChallan(id: string, data: ValidatedUpdateChallan): Promise<any> {
+    const updateData: any = { updated_at: new Date().toISOString() };
+    if (data.customer_id !== undefined) updateData.customer_id = data.customer_id;
+    if (data.status !== undefined) updateData.status = data.status;
+    if (data.notes !== undefined) updateData.notes = data.notes;
+    if (data.dispatch_date !== undefined) updateData.dispatch_date = data.dispatch_date;
+
+    const { error } = await this.supabase
+      .from("challans")
+      .update(updateData as never)
+      .eq("id", id);
+
+    if (error) throw new DatabaseError("Failed to update challan", error);
+
+    if (data.items && data.items.length > 0) {
+      const { error: deleteError } = await this.supabase
+        .from("challan_items")
+        .delete()
+        .eq("challan_id", id);
+
+      if (deleteError) throw new DatabaseError("Failed to clear old challan items", deleteError);
+
+      const itemsToInsert = data.items.map((item) => ({
+        challan_id: id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+      }));
+
+      const { error: itemsError } = await this.supabase
+        .from("challan_items")
+        .insert(itemsToInsert as any);
+
+      if (itemsError) throw new DatabaseError("Failed to update challan items", itemsError);
+    }
+
+    return this.getChallanById(id);
+  }
 }
 

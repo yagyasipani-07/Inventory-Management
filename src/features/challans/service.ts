@@ -2,7 +2,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import { ChallanRepository } from "./repository";
 import { CreateChallanSchema } from "./schema";
-import { ValidatedCreateChallan, ChallanSearchParams } from "./types";
+import { ValidatedCreateChallan, ValidatedUpdateChallan, ChallanSearchParams } from "./types";
 import { AppError } from "@/utils/errors";
 
 export class ChallanService {
@@ -22,20 +22,16 @@ export class ChallanService {
 
   async getChallan(id: string) {
     try {
-      const challan = await this.repository.getChallanById(id);
-      if (!challan) {
-        throw new AppError("Challan not found", "NOT_FOUND", 404);
-      }
-      return challan;
+      return await this.repository.getChallanById(id);
     } catch (error) {
       throw this.handleError(error);
     }
   }
 
-  async createDraftChallan(data: ValidatedCreateChallan, userId?: string) {
+  async createDraftChallan(data: unknown) {
     try {
-      const validatedData = CreateChallanSchema.parse(data);
-      return await this.repository.createDraftChallan(validatedData, userId);
+      const validated = CreateChallanSchema.parse(data) as ValidatedCreateChallan;
+      return await this.repository.createDraftChallan(validated);
     } catch (error) {
       throw this.handleError(error);
     }
@@ -44,6 +40,33 @@ export class ChallanService {
   async deleteChallan(id: string) {
     try {
       await this.repository.softDeleteChallan(id);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updateChallanStatus(id: string, status: string, dispatchDate?: string | null) {
+    try {
+      return await this.repository.updateChallanStatus(id, status, dispatchDate);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updateChallanDispatchInfo(
+    id: string,
+    data: { dispatch_date?: string | null; notes?: string | null; status?: string }
+  ) {
+    try {
+      return await this.repository.updateChallanDispatchInfo(id, data);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
+  async updateChallan(id: string, data: ValidatedUpdateChallan) {
+    try {
+      return await this.repository.updateChallan(id, data);
     } catch (error) {
       throw this.handleError(error);
     }

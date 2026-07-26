@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent } from '@/src/components/ui/card';
 import { Textarea } from '@/src/components/ui/textarea';
+import { Input } from '@/src/components/ui/input';
 import { Label } from '@/src/components/ui/label';
 import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,6 +43,7 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [items, setItems] = useState<ChallanItem[]>(initialData?.items || []);
   const [notes, setNotes] = useState(initialData?.notes || '');
+  const [transport, setTransport] = useState(initialData?.transport || '');
 
   // Initialize selected customer if editing
   useEffect(() => {
@@ -76,7 +78,7 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
       customerId: selectedCustomer.id,
       customerName: selectedCustomer.name,
       city: selectedCustomer.city,
-      transport: '',
+      transport,
       items,
       notes
     };
@@ -146,17 +148,30 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
               customer={selectedCustomer}
               items={items}
               notes={notes}
+              transport={transport}
             />
             <Card>
-              <CardContent className="pt-6">
-                <Label htmlFor="notes">Additional Notes</Label>
-                <Textarea 
-                  id="notes"
-                  placeholder="Enter any special instructions or remarks..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="mt-2"
-                />
+              <CardContent className="pt-6 space-y-4">
+                <div>
+                  <Label htmlFor="transport">Mode of Transport / Vehicle Info</Label>
+                  <Input
+                    id="transport"
+                    placeholder="e.g. By Road - Tata Ace DL01AB1234, Customer Pickup..."
+                    value={transport}
+                    onChange={(e) => setTransport(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="notes">Additional Notes</Label>
+                  <Textarea 
+                    id="notes"
+                    placeholder="Enter any special instructions or remarks..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
               </CardContent>
             </Card>
           </div>

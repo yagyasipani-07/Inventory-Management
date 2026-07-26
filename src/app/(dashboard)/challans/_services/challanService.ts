@@ -35,14 +35,42 @@ export type ChallanFormData = Omit<Challan, 'id' | 'challanNumber' | 'status' | 
 
 const getService = () => new RealChallanService(createBrowserClient());
 
+export function encodeNotesAndTransport(notes?: string | null, transport?: string | null): string | null {
+  const n = (notes || '').trim();
+  const t = (transport || '').trim();
+  if (!n && !t) return null;
+  if (!t) return n;
+  return JSON.stringify({ notes: n, transport: t });
+}
+
+export function decodeNotesAndTransport(dbNotes: string | null): { notes: string; transport: string } {
+  if (!dbNotes) return { notes: '', transport: '' };
+  const trimmed = dbNotes.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed === 'object' && parsed !== null && ('notes' in parsed || 'transport' in parsed)) {
+        return {
+          notes: parsed.notes || '',
+          transport: parsed.transport || '',
+        };
+      }
+    } catch {
+      // Not JSON, return as plain text notes
+    }
+  }
+  return { notes: dbNotes, transport: '' };
+}
+
 function mapToUiChallan(dbChallan: any): Challan {
+  const { notes, transport } = decodeNotesAndTransport(dbChallan.notes);
   return {
     id: dbChallan.id,
     challanNumber: dbChallan.challan_number,
     customerId: dbChallan.customer_id,
     customerName: dbChallan.customers?.customer_name || 'Unknown',
     city: 'N/A', // Update later if city is added to customer
-    transport: '', // Update later if transport is added
+    transport,
     status: dbChallan.status as ChallanStatus,
     dispatchDate: dbChallan.dispatch_date,
     items: dbChallan.challan_items?.map((li: any) => ({
@@ -56,7 +84,7 @@ function mapToUiChallan(dbChallan: any): Challan {
       amount: '',
     })) || [],
     totalQuantity: dbChallan.challan_items?.reduce((acc: number, item: any) => acc + item.quantity, 0) || 0,
-    notes: dbChallan.notes || '',
+    notes,
     createdBy: 'System User', // Map user_profiles later
     createdAt: dbChallan.created_at,
     updatedAt: dbChallan.updated_at,
@@ -85,7 +113,7 @@ export const challanService = {
     const service = getService();
     const challan = await service.createDraftChallan({
       customer_id: data.customerId,
-      notes: data.notes || null,
+      notes: encodeNotesAndTransport(data.notes, data.transport),
       items: data.items.map(i => ({
         product_id: i.productId,
         quantity: Number(i.quantity)
@@ -95,19 +123,48 @@ export const challanService = {
   },
 
   updateChallan: async (id: string, data: ChallanFormData): Promise<Challan> => {
-    console.warn(`Full update for challan ${id} not fully supported by backend yet, simulating...`);
-    const c = await challanService.getChallan(id);
-    if (!c) throw new Error('Not found');
-    return c;
+    const service = getService();
+    await service.updateChallan(id, {
+      customer_id: data.customerId,
+      notes: encodeNotesAndTransport(data.notes, data.transport),
+      items: data.items.map(i => ({
+        product_id: i.productId,
+        quantity: Number(i.quantity)
+      }))
+    });
+    const updated = await challanService.getChallan(id);
+    if (!updated) throw new Error('Not found');
+    return updated;
   },
 
-  updateStatus: async (id: string, status: ChallanStatus): Promise<Challan> => {
-    // Currently only supporting Draft, Approved, Dispatched, Cancelled via DB
-    if (status === 'Ready') status = 'Draft'; 
-    const c = await challanService.getChallan(id);
-    if (!c) throw new Error('Not found');
-    // Using a simple mock update for UI purposes until Phase 4 workflows are connected
-    return { ...c, status };
+  updateStatus: async (id: string, status: ChallanStatus, dispatchDate?: string | null): Promise<Challan> => {
+    if (status === 'Ready') status = 'Approved';
+    const service = getService();
+    await service.updateChallanStatus(id, status, dispatchDate);
+    const updated = await challanService.getChallan(id);
+    if (!updated) throw new Error('Not found');
+    return updated;
+  },
+
+  updateDispatchInfo: async (
+    id: string,
+    dispatchDate: string | null,
+    transport: string,
+    status?: ChallanStatus
+  ): Promise<Challan> => {
+    const existing = await challanService.getChallan(id);
+    if (!existing) throw new Error('Challan not found');
+
+    const newNotes = encodeNotesAndTransport(existing.notes, transport);
+    const service = getService();
+    await service.updateChallanDispatchInfo(id, {
+      dispatch_date: dispatchDate,
+      notes: newNotes,
+      status: status || existing.status,
+    });
+    const updated = await challanService.getChallan(id);
+    if (!updated) throw new Error('Not found');
+    return updated;
   },
 
   deleteChallan: async (id: string): Promise<void> => {
@@ -123,3 +180,4 @@ export const challanService = {
     return challanService.createChallan(formData);
   }
 };
+

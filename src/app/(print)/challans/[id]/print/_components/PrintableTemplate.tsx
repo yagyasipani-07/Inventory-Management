@@ -21,8 +21,14 @@ export function PrintableTemplate({ challan }: PrintableTemplateProps) {
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-left inline-grid">
             <span className="font-semibold">Challan No:</span>
             <span>{challan.challanNumber}</span>
-            <span className="font-semibold">Date:</span>
+            <span className="font-semibold">Created Date:</span>
             <span>{format(new Date(challan.createdAt), 'dd-MMM-yyyy')}</span>
+            {challan.dispatchDate && (
+              <>
+                <span className="font-semibold">Dispatch Date:</span>
+                <span>{format(new Date(challan.dispatchDate), 'dd-MMM-yyyy')}</span>
+              </>
+            )}
             <span className="font-semibold">Transport:</span>
             <span>{challan.transport || 'N/A'}</span>
           </div>

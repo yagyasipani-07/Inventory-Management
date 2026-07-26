@@ -61,8 +61,8 @@ export function useUpdateChallanStatus() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: ChallanStatus }) =>
-      challanService.updateStatus(id, status),
+    mutationFn: ({ id, status, dispatchDate }: { id: string; status: ChallanStatus; dispatchDate?: string | null }) =>
+      challanService.updateStatus(id, status, dispatchDate),
     onSuccess: (updatedChallan) => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
@@ -76,6 +76,36 @@ export function useUpdateChallanStatus() {
     },
   });
 }
+
+export function useUpdateChallanDispatchInfo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      dispatchDate,
+      transport,
+      status,
+    }: {
+      id: string;
+      dispatchDate: string | null;
+      transport: string;
+      status?: ChallanStatus;
+    }) => challanService.updateDispatchInfo(id, dispatchDate, transport, status),
+    onSuccess: (updatedChallan) => {
+      queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['recentChallans'] });
+      queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
+      queryClient.setQueryData([...CHALLANS_QUERY_KEY, updatedChallan.id], updatedChallan);
+      toast.success('Dispatch info updated successfully');
+    },
+    onError: () => {
+      toast.error('Failed to update dispatch info');
+    },
+  });
+}
+
 
 export function useDeleteChallan() {
   const queryClient = useQueryClient();

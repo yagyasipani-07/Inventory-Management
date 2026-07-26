@@ -8,9 +8,10 @@ interface ReviewStepProps {
   customer: Customer | null;
   items: ChallanItem[];
   notes: string;
+  transport?: string;
 }
 
-export function ReviewStep({ customer, items, notes }: ReviewStepProps) {
+export function ReviewStep({ customer, items, notes, transport }: ReviewStepProps) {
   if (!customer) return null;
 
   const totalQty = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -62,6 +63,12 @@ export function ReviewStep({ customer, items, notes }: ReviewStepProps) {
               <span className="text-muted-foreground">Estimated Amount</span>
               <span className="font-medium">₹{totalAmount.toLocaleString()}</span>
             </div>
+            {transport ? (
+              <div className="flex justify-between items-center border-b pb-2">
+                <span className="text-muted-foreground">Transport Mode</span>
+                <span className="font-medium">{transport}</span>
+              </div>
+            ) : null}
             <div className="flex justify-between items-center">
               <span className="text-muted-foreground">Date</span>
               <span className="font-medium">{new Date().toLocaleDateString()}</span>

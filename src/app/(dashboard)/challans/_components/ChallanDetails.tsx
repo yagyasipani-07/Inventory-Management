@@ -1,11 +1,15 @@
 'use client';
 
-import { useChallan, useUpdateChallanStatus } from '../_hooks/useChallans';
+import { useState } from 'react';
+import { useChallan, useUpdateChallanStatus, useUpdateChallanDispatchInfo } from '../_hooks/useChallans';
 import { ChallanStatusBadge } from './ChallanStatusBadge';
 import { ChallanTimeline } from './ChallanTimeline';
 import { Button } from '@/src/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/src/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/src/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/src/components/ui/dialog';
+import { Input } from '@/src/components/ui/input';
+import { Label } from '@/src/components/ui/label';
 import { MapPin, Truck, Calendar, User, Printer, Edit, PackageCheck, Send, CheckCircle2, Copy } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -19,13 +23,42 @@ interface ChallanDetailsProps {
 export function ChallanDetails({ id }: ChallanDetailsProps) {
   const { data: challan, isLoading, error } = useChallan(id);
   const updateStatus = useUpdateChallanStatus();
+  const updateDispatchInfo = useUpdateChallanDispatchInfo();
+
+  const [isDispatchModalOpen, setIsDispatchModalOpen] = useState(false);
+  const [dispatchDateInput, setDispatchDateInput] = useState('');
+  const [transportInput, setTransportInput] = useState('');
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading details...</div>;
   if (error || !challan) return <div className="p-8 text-center text-destructive">Error loading challan details.</div>;
 
+  const openDispatchModal = () => {
+    setDispatchDateInput(challan.dispatchDate ? challan.dispatchDate.split('T')[0] : new Date().toISOString().split('T')[0]);
+    setTransportInput(challan.transport || '');
+    setIsDispatchModalOpen(true);
+  };
+
   const handleStatusChange = async (newStatus: ChallanStatus) => {
     try {
-      await updateStatus.mutateAsync({ id: challan.id, status: newStatus });
+      const dDate =
+        newStatus === 'Dispatched' && !challan.dispatchDate
+          ? new Date().toISOString().split('T')[0]
+          : challan.dispatchDate;
+      await updateStatus.mutateAsync({ id: challan.id, status: newStatus, dispatchDate: dDate });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleSaveDispatchInfo = async (markDispatched = false) => {
+    try {
+      await updateDispatchInfo.mutateAsync({
+        id: challan.id,
+        dispatchDate: dispatchDateInput || null,
+        transport: transportInput,
+        status: markDispatched ? 'Dispatched' : undefined,
+      });
+      setIsDispatchModalOpen(false);
     } catch (err) {
       console.error(err);
     }
@@ -48,7 +81,7 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
           </p>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {challan.status === 'Draft' && (
             <Button variant="outline" asChild>
               <Link href={`/challans/${challan.id}/edit`}>
@@ -69,12 +102,12 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
               <CheckCircle2 className="h-4 w-4 mr-2" /> Approve
             </Button>
           )}
-          {challan.status === 'Approved' && (
-            <Button onClick={() => handleStatusChange('Ready')}>
-              <PackageCheck className="h-4 w-4 mr-2" /> Mark Ready
+          {(challan.status === 'Approved' || challan.status === 'Dispatched') && (
+            <Button variant="outline" onClick={openDispatchModal}>
+              <Calendar className="h-4 w-4 mr-2" /> Set Dispatch Date
             </Button>
           )}
-          {challan.status === 'Ready' && (
+          {challan.status === 'Approved' && (
             <Button onClick={() => handleStatusChange('Dispatched')}>
               <Send className="h-4 w-4 mr-2" /> Dispatch Now
             </Button>
@@ -159,8 +192,13 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle>Dispatch Info</CardTitle>
+              {(challan.status === 'Approved' || challan.status === 'Dispatched') && (
+                <Button variant="ghost" size="sm" onClick={openDispatchModal} className="h-8 px-2">
+                  <Edit className="h-4 w-4 mr-1" /> Edit
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center gap-3 text-sm">
@@ -187,6 +225,55 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
           )}
         </div>
       </div>
+
+      <Dialog open={isDispatchModalOpen} onOpenChange={setIsDispatchModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Set Dispatch Information</DialogTitle>
+            <DialogDescription>
+              Enter the manual dispatch date and vehicle/transport info for this challan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="dispatch-date">Dispatch Date</Label>
+              <Input
+                id="dispatch-date"
+                type="date"
+                value={dispatchDateInput}
+                onChange={(e) => setDispatchDateInput(e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="dispatch-transport">Mode of Transport / Vehicle Info</Label>
+              <Input
+                id="dispatch-transport"
+                placeholder="e.g. Tata Ace DL01AB1234, Customer Pickup..."
+                value={transportInput}
+                onChange={(e) => setTransportInput(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => handleSaveDispatchInfo(false)}
+              disabled={updateDispatchInfo.isPending}
+            >
+              Save Dispatch Info
+            </Button>
+            {challan.status === 'Approved' && (
+              <Button
+                onClick={() => handleSaveDispatchInfo(true)}
+                disabled={updateDispatchInfo.isPending}
+              >
+                <Send className="h-4 w-4 mr-2" /> Save & Mark Dispatched
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
