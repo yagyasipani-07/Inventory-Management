@@ -11,6 +11,7 @@ ALTER TABLE stock_movements
 
 -- Add transport_name and vehicle_number to challans (retaining transport for backward compatibility)
 ALTER TABLE challans
+    ADD COLUMN IF NOT EXISTS transport VARCHAR(100),
     ADD COLUMN IF NOT EXISTS transport_name VARCHAR(100),
     ADD COLUMN IF NOT EXISTS vehicle_number VARCHAR(100),
     ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ DEFAULT NULL;
@@ -56,7 +57,9 @@ CREATE POLICY "Authenticated users can insert challans" ON challans
 --   4. Creates stock_movements records with type 'Dispatch'
 --   5. Logs an audit trail entry
 --   6. Updates challan status to 'Dispatched' along with transport details
---   7. Rolls back completely if any check fails
+-- 7. Rolls back completely if any check fails
+DROP FUNCTION IF EXISTS dispatch_challan(UUID, UUID, UUID);
+
 CREATE OR REPLACE FUNCTION dispatch_challan(
     p_challan_id UUID,
     p_warehouse_id UUID DEFAULT NULL,
@@ -79,7 +82,7 @@ DECLARE
 BEGIN
     -- Determine warehouse ID (default to first active warehouse if not specified)
     IF p_warehouse_id IS NULL THEN
-        SELECT id INTO v_warehouse_id FROM warehouses WHERE active = true ORDER BY created_at ASC LIMIT 1;
+        SELECT id INTO v_warehouse_id FROM warehouses WHERE active_status = true ORDER BY created_at ASC LIMIT 1;
         IF v_warehouse_id IS NULL THEN
             RAISE EXCEPTION 'No active warehouse found to dispatch from';
         END IF;
@@ -175,3 +178,6 @@ BEGIN
     RETURN TRUE;
 END;
 $$;
+
+-- Reload Supabase PostgREST schema cache
+NOTIFY pgrst, 'reload schema';

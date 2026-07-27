@@ -17,7 +17,8 @@ const migrations = [
   '008_seed.sql',
   '009_rls_policies.sql',
   '010_workflows_rpc.sql',
-  '011_dev_anon_policies.sql'
+  '011_dev_anon_policies.sql',
+  '012_v2_1_stabilization_sprint.sql'
 ];
 
 async function runMigrations() {
