@@ -180,4 +180,35 @@ export class InventoryRepository {
         },
       ] as any);
   }
+
+  async updateReorderLevel(productId: string, reorderLevel: number): Promise<void> {
+    const { data: whs }: any = await this.supabase.from("warehouses").select("id").eq("active_status", true).limit(1);
+    const targetWhId = whs && whs[0]?.id ? whs[0].id : "e52b1b11-5374-4b52-a5e3-1b93f1d9396e";
+
+    const { data: stockRow }: any = await this.supabase
+      .from("warehouse_stock")
+      .select("id")
+      .eq("warehouse_id", targetWhId)
+      .eq("product_id", productId)
+      .single();
+
+    if (stockRow) {
+      await this.supabase
+        .from("warehouse_stock")
+        .update({ reorder_level: reorderLevel, updated_at: new Date().toISOString() } as never)
+        .eq("id", stockRow.id);
+    } else {
+      await this.supabase
+        .from("warehouse_stock")
+        .insert([
+          {
+            warehouse_id: targetWhId,
+            product_id: productId,
+            current_quantity: 0,
+            reserved_quantity: 0,
+            reorder_level: reorderLevel,
+          },
+        ] as any);
+    }
+  }
 }

@@ -14,6 +14,10 @@ export function useUpdateProduct() {
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] });
       queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       queryClient.invalidateQueries({ queryKey: ['inventoryTrend'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseStock'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['product-movements', updatedProduct.id] });
+      queryClient.invalidateQueries({ queryKey: ['stockMovement', updatedProduct.id] });
       
       queryClient.setQueryData<Product[]>(['products'], (oldData) => {
         return oldData?.map((p) => (p.id === updatedProduct.id ? updatedProduct : p));

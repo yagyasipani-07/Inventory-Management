@@ -27,7 +27,7 @@ function mapToUiProduct(
     reservedStock: reserved,
     availableStock: available,
     unit: dbProduct.unit || 'Pieces',
-    openingStock: 0,
+    openingStock: current,
     minStock: min,
     description: dbProduct.description || '',
     lastUpdated: dbProduct.updated_at || new Date().toISOString(),
@@ -69,17 +69,48 @@ export const inventoryService = {
       category: data.category || null,
       unit: data.unit || 'Pieces'
     });
-    return mapToUiProduct(product);
+    const initialQty = Number(data.openingStock) || 0;
+    if (initialQty > 0) {
+      await service.adjustStock(product.id, 'increase', initialQty, 'Initial opening stock');
+    }
+    const minStock = Number(data.minStock);
+    if (!isNaN(minStock)) {
+      await service.updateReorderLevel(product.id, minStock);
+    }
+    const stockMap = await service.getProductStocks([product.id]);
+    return mapToUiProduct(product, stockMap[product.id]);
   },
 
   async updateProduct(id: string, data: any) {
     const service = getService();
+    const existingStocks = await service.getProductStocks([id]);
+    const currentQty = existingStocks[id]?.current || 0;
+
     const product = await service.updateProduct(id, {
       product_code: data.code,
       product_name: data.name,
       product_image_path: data.photoUrl,
       description: data.description,
+      thickness: data.thickness !== undefined ? parseFloat(String(data.thickness)) || null : undefined,
+      length: data.length !== undefined ? parseFloat(String(data.length)) || null : undefined,
+      width: data.width !== undefined ? parseFloat(String(data.width)) || null : undefined,
+      unit: data.unit,
+      brand: data.brand,
+      category: data.category,
     });
+
+    const newQty = Number(data.openingStock);
+    if (!isNaN(newQty) && newQty !== currentQty && newQty >= 0) {
+      const diff = newQty - currentQty;
+      const type = diff > 0 ? 'increase' : 'decrease';
+      await service.adjustStock(id, type, Math.abs(diff), 'Stock updated via product edit');
+    }
+
+    const minStock = Number(data.minStock);
+    if (!isNaN(minStock)) {
+      await service.updateReorderLevel(id, minStock);
+    }
+
     const stockMap = await service.getProductStocks([id]);
     return mapToUiProduct(product, stockMap[id]);
   },

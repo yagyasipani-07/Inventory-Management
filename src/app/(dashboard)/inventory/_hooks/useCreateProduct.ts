@@ -14,6 +14,10 @@ export function useCreateProduct() {
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] });
       queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       queryClient.invalidateQueries({ queryKey: ['inventoryTrend'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseStock'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseSummary'] });
+      queryClient.invalidateQueries({ queryKey: ['product-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['stockMovement'] });
       // Optionally update cache directly for immediate feedback
       queryClient.setQueryData<Product[]>(['products'], (oldData) => {
         return oldData ? [newProduct, ...oldData] : [newProduct];

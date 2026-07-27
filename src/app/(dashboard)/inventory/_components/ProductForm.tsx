@@ -247,9 +247,9 @@ export function ProductForm({ initialData }: ProductFormProps) {
               name="openingStock"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Opening Stock</FormLabel>
+                  <FormLabel>{isEditing ? 'Current Stock' : 'Opening Stock'}</FormLabel>
                   <FormControl>
-                    <Input type="number" min={0} disabled={isEditing} {...field} />
+                    <Input type="number" min={0} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

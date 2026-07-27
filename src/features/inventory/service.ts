@@ -88,6 +88,14 @@ export class InventoryService {
     }
   }
 
+  async updateReorderLevel(productId: string, reorderLevel: number) {
+    try {
+      await this.repository.updateReorderLevel(productId, reorderLevel);
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   private handleError(error: any): Error {
     if (error instanceof AppError) return error;
     if (error.name === "ZodError") {
