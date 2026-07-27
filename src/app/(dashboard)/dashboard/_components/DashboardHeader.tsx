@@ -34,12 +34,11 @@ export function DashboardHeader() {
         </span>
         <Button
           variant="outline"
-          size="sm"
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="w-9 px-0 sm:w-auto sm:px-3"
+          className="h-12 w-12 px-0 sm:h-9 sm:w-auto sm:px-3"
         >
-          <RefreshCcw className={`h-4 w-4 sm:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCcw className={`h-5 w-5 sm:h-4 sm:w-4 sm:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
           <span className="hidden sm:inline">Refresh Data</span>
         </Button>
       </div>

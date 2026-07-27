@@ -32,14 +32,15 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const collapsed = useUIStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const { sidebarCollapsed: collapsed, toggleSidebar, mobileDrawerOpen, setMobileDrawerOpen } = useUIStore();
 
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-in-out",
-        collapsed ? "w-[72px]" : "w-[240px]"
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300 ease-in-out",
+        mobileDrawerOpen ? "translate-x-0 w-[280px]" : "-translate-x-full w-[280px]",
+        "md:translate-x-0",
+        collapsed ? "md:w-[72px]" : "md:w-[240px]"
       )}
     >
       {/* Logo */}
@@ -71,16 +72,17 @@ export function Sidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
+                  onClick={() => setMobileDrawerOpen(false)}
                   title={collapsed ? item.title : undefined}
                   className={cn(
-                    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150",
+                    "group flex items-center min-h-[48px] gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-150",
                     isActive
                       ? "bg-sidebar-active text-sidebar-active-foreground"
                       : "text-sidebar-foreground/70 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
                   )}
                 >
                   <Icon className="h-5 w-5 shrink-0" strokeWidth={1.8} />
-                  {!collapsed && <span className="truncate">{item.title}</span>}
+                  <span className={cn("truncate", collapsed ? "md:hidden" : "")}>{item.title}</span>
                 </Link>
               </li>
             );
@@ -88,11 +90,11 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      {/* Collapse Toggle */}
-      <div className="border-t border-sidebar-border p-3">
+      {/* Collapse Toggle - Desktop Only */}
+      <div className="border-t border-sidebar-border p-3 hidden md:block">
         <button
           onClick={toggleSidebar}
-          className="flex w-full items-center justify-center gap-3 rounded-lg px-3 py-2.5 text-sm text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
+          className="flex w-full items-center justify-center min-h-[48px] gap-3 rounded-lg px-3 py-2 text-sm text-sidebar-foreground/70 transition-colors duration-150 hover:bg-sidebar-foreground/10 hover:text-sidebar-foreground"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? (
