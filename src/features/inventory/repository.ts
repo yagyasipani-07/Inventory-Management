@@ -80,6 +80,12 @@ export class InventoryRepository {
       .eq("id", id);
 
     if (error) throw new DatabaseError("Failed to delete product", error);
+
+    // Clean up orphaned warehouse_stock rows for the deleted product
+    await this.supabase
+      .from("warehouse_stock")
+      .delete()
+      .eq("product_id", id);
   }
 
   async getProductStocks(productIds: string[]): Promise<Record<string, { current: number; reserved: number; min: number }>> {

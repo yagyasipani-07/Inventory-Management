@@ -12,6 +12,8 @@ export function useDeleteProduct() {
       queryClient.invalidateQueries({ queryKey: ['lowStockProducts'] });
       queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       queryClient.invalidateQueries({ queryKey: ['inventoryTrend'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseStock'] });
+      queryClient.invalidateQueries({ queryKey: ['warehouseSummary'] });
       
       queryClient.setQueryData<Product[]>(['products'], (oldData) => {
         return oldData?.filter((p) => p.id !== deletedId);

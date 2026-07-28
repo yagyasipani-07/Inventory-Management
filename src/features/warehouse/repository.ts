@@ -20,7 +20,8 @@ export class WarehouseRepository {
   async getWarehouseStock(params: StockSearchParams): Promise<{ data: any[]; count: number }> {
     let query = this.supabase
       .from("warehouse_stock")
-      .select("*, products(*), warehouses(*)", { count: "exact" });
+      .select("*, products!inner(*), warehouses(*)", { count: "exact" })
+      .is("products.deleted_at", null);
 
     if (params.warehouse_id) query = query.eq("warehouse_id", params.warehouse_id);
     if (params.product_id) query = query.eq("product_id", params.product_id);
