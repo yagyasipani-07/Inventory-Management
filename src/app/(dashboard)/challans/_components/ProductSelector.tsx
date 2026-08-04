@@ -28,7 +28,10 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
     if (existingIndex >= 0) {
       // Increase quantity
       const newItems = [...selectedItems];
-      newItems[existingIndex].quantity += 1;
+      newItems[existingIndex] = {
+        ...newItems[existingIndex],
+        quantity: newItems[existingIndex].quantity + 1,
+      };
       onChange(newItems);
     } else {
       // Add new
@@ -38,6 +41,8 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
           id: Math.random().toString(36).substring(7),
           productId: product.id,
           productName: product.name,
+          productCode: product.code,
+          productImagePath: product.photoUrl || null,
           thickness: product.thickness,
           size: product.size,
           quantity: 1,
@@ -47,6 +52,7 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
       ]);
     }
   };
+
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;

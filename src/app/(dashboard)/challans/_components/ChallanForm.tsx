@@ -181,6 +181,7 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
       {/* Navigation Footer */}
       <div className="flex justify-between items-center pt-6 border-t">
         <Button 
+          type="button"
           variant="outline" 
           onClick={handleBack} 
           disabled={step === 1}
@@ -190,12 +191,13 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
         </Button>
         
         {step < 3 ? (
-          <Button onClick={handleNext}>
+          <Button type="button" onClick={handleNext}>
             Next
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         ) : (
           <Button 
+            type="button"
             onClick={onSubmit} 
             disabled={createChallan.isPending || updateChallan.isPending}
           >
@@ -207,3 +209,4 @@ export function ChallanForm({ initialData, isEdit }: ChallanFormProps) {
     </div>
   );
 }
+

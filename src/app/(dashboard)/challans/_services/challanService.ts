@@ -7,7 +7,7 @@ export interface ChallanItem {
   id: string;
   productId: string;
   productName: string;
-  productCode: string;
+  productCode?: string;
   productImagePath?: string | null;
   thickness: string;
   size: string;
