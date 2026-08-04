@@ -39,11 +39,13 @@ import { printPdfReport } from '@/src/lib/export/printPdf';
 
 interface InventoryTableProps {
   data: Product[];
+  searchQuery: string;
+  onSearchChange: (val: string) => void;
   onAdjustStock: (product: Product) => void;
   onDelete: (product: Product) => void;
 }
 
-export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTableProps) {
+export function InventoryTable({ data, searchQuery, onSearchChange, onAdjustStock, onDelete }: InventoryTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
@@ -188,7 +190,12 @@ export function InventoryTable({ data, onAdjustStock, onDelete }: InventoryTable
 
   return (
     <div className="space-y-4">
-      <InventoryToolbar table={table} onExportPdf={handleExportPdf} />
+      <InventoryToolbar 
+        table={table} 
+        onExportPdf={handleExportPdf}
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+      />
       <div className="rounded-md border bg-card">
         <Table>
           <TableHeader>

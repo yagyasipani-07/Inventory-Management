@@ -78,6 +78,9 @@ export interface Database {
           id: string
           notes: string | null
           status: Database["public"]["Enums"]["challan_status"]
+          transport: string | null
+          transport_name: string | null
+          vehicle_number: string | null
           updated_at: string
         }
         Insert: {
@@ -90,6 +93,9 @@ export interface Database {
           id?: string
           notes?: string | null
           status?: Database["public"]["Enums"]["challan_status"]
+          transport?: string | null
+          transport_name?: string | null
+          vehicle_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -102,6 +108,9 @@ export interface Database {
           id?: string
           notes?: string | null
           status?: Database["public"]["Enums"]["challan_status"]
+          transport?: string | null
+          transport_name?: string | null
+          vehicle_number?: string | null
           updated_at?: string
         }
       }
@@ -282,6 +291,7 @@ export interface Database {
           quantity_change: number
           reference_id: string | null
           remarks: string | null
+          purchase_bill_number: string | null
           warehouse_id: string
         }
         Insert: {
@@ -294,6 +304,7 @@ export interface Database {
           quantity_change: number
           reference_id?: string | null
           remarks?: string | null
+          purchase_bill_number?: string | null
           warehouse_id: string
         }
         Update: {
@@ -306,6 +317,7 @@ export interface Database {
           quantity_change?: number
           reference_id?: string | null
           remarks?: string | null
+          purchase_bill_number?: string | null
           warehouse_id?: string
         }
       }

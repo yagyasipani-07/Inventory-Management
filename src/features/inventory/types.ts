@@ -14,6 +14,7 @@ export interface ProductSearchParams {
   search?: string;
   category?: string;
   brand?: string;
+  purchase_bill_number?: string;
   active_status?: boolean;
   page?: number;
   limit?: number;

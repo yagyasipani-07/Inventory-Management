@@ -31,8 +31,8 @@ export function useCreateChallan() {
       queryClient.invalidateQueries({ queryKey: ['recentActivity'] });
       toast.success('Challan created successfully');
     },
-    onError: () => {
-      toast.error('Failed to create challan');
+    onError: (error: any) => {
+      toast.error(error?.message || 'Failed to create challan');
     },
   });
 }
@@ -51,8 +51,8 @@ export function useUpdateChallan() {
       queryClient.setQueryData([...CHALLANS_QUERY_KEY, updatedChallan.id], updatedChallan);
       toast.success('Challan updated successfully');
     },
-    onError: () => {
-      toast.error('Failed to update challan');
+    onError: (error: any) => {
+      toast.error(error?.message || 'Failed to update challan');
     },
   });
 }

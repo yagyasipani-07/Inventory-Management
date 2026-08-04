@@ -7,6 +7,37 @@ export class InventoryRepository {
   constructor(private supabase: SupabaseClient<Database>) {}
 
   async getProducts(params: ProductSearchParams): Promise<{ data: Product[]; count: number }> {
+    if (params.purchase_bill_number) {
+      const { data: moveData } = await this.supabase
+        .from("stock_movements")
+        .select("product_id")
+        .eq("purchase_bill_number", params.purchase_bill_number);
+        
+      if (!moveData || moveData.length === 0) {
+        return { data: [], count: 0 };
+      }
+      
+      const productIds = Array.from(new Set(moveData.map((m: any) => m.product_id)));
+      let query = this.supabase
+        .from("products")
+        .select("*", { count: "exact" })
+        .in("id", productIds)
+        .is("deleted_at", null);
+
+      if (params.active_status !== undefined) query = query.eq("active_status", params.active_status);
+
+      const page = params.page || 1;
+      const limit = params.limit || 50;
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      query = query.range(from, to).order("created_at", { ascending: false });
+
+      const { data, error, count } = await query;
+      if (error) throw new DatabaseError("Failed to fetch products", error);
+      return { data: data || [], count: count || 0 };
+    }
+
     let query = this.supabase
       .from("products")
       .select("*", { count: "exact" })

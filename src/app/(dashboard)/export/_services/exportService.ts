@@ -21,13 +21,24 @@ export const exportService = {
     const supabase = getClient();
     
     if (config.dataset === "Inventory") {
-      const { data: products } = await supabase.from('products').select('*').is('deleted_at', null);
+      let query = supabase.from('products').select('*, stock_movements(purchase_bill_number, created_at)').is('deleted_at', null);
+      if (config.status === "active") query = query.eq('active_status', true);
+      else if (config.status === "inactive") query = query.eq('active_status', false);
+
+      const { data: products } = await query;
       const { data: stocks } = await supabase.from('warehouse_stock').select('*');
       
       let rows = (products || []).map((p: any) => {
         const productStocks = (stocks || []).filter((s: any) => s.product_id === p.id);
         const totalQty = productStocks.reduce((acc: number, s: any) => acc + (s.current_quantity || 0), 0);
         const reservedQty = productStocks.reduce((acc: number, s: any) => acc + (s.reserved_quantity || 0), 0);
+        
+        // Find latest purchase bill
+        const movements = (p.stock_movements || [])
+          .filter((m: any) => m.purchase_bill_number)
+          .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const latestBill = movements.length > 0 ? movements[0].purchase_bill_number : "N/A";
+
         return {
           "Category": p.category || "Uncategorized",
           "Product Code": p.product_code,
@@ -37,6 +48,7 @@ export const exportService = {
           "Current Stock": totalQty,
           "Reserved Stock": reservedQty,
           "Available Stock": totalQty - reservedQty,
+          "Latest Purchase Bill": latestBill,
         };
       });
 
@@ -75,7 +87,19 @@ export const exportService = {
       }));
     } 
     else if (config.dataset === "Dispatch Challans") {
-      const { data } = await supabase.from('challans').select('*, customers(customer_name), challan_items(quantity)');
+      let query = supabase.from('challans').select('*, customers(customer_name), challan_items(quantity)');
+      
+      if (config.status && config.status !== "all") {
+        query = query.eq('status', config.status === "active" ? "Approved" : config.status);
+      }
+      if (config.dateRange?.from) {
+        query = query.gte('created_at', config.dateRange.from.toISOString());
+      }
+      if (config.dateRange?.to) {
+        query = query.lte('created_at', config.dateRange.to.toISOString());
+      }
+
+      const { data } = await query;
       return (data || []).map((ch: any) => ({
         "Challan Number": ch.challan_number,
         "Date": ch.created_at ? ch.created_at.split('T')[0] : "N/A",

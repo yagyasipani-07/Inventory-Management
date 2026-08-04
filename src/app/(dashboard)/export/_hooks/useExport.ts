@@ -31,11 +31,11 @@ export const useExport = create<ExportState>((set, get) => ({
   previewData: [],
   isPreviewLoading: false,
 
-  setDataset: (dataset) => set((state) => ({ config: { ...state.config, dataset } })),
+  setDataset: (dataset) => { set((state) => ({ config: { ...state.config, dataset } })); get().loadPreview(); },
   setFormat: (format) => set((state) => ({ config: { ...state.config, format } })),
-  setDateRange: (dateRange) => set((state) => ({ config: { ...state.config, dateRange } })),
-  setStatus: (status) => set((state) => ({ config: { ...state.config, status } })),
-  setGroupBy: (groupBy) => set((state) => ({ config: { ...state.config, groupBy } })),
+  setDateRange: (dateRange) => { set((state) => ({ config: { ...state.config, dateRange } })); get().loadPreview(); },
+  setStatus: (status) => { set((state) => ({ config: { ...state.config, status } })); get().loadPreview(); },
+  setGroupBy: (groupBy) => { set((state) => ({ config: { ...state.config, groupBy } })); get().loadPreview(); },
 
   loadPreview: async () => {
     const { config } = get();

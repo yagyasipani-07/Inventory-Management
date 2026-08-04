@@ -103,7 +103,11 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
         <ScrollArea className="flex-1 p-2">
           <div className="space-y-2">
             {filteredProducts.map(product => (
-              <div key={product.id} className="flex items-center justify-between p-3 border rounded hover:bg-muted/50 transition-colors">
+              <div 
+                key={product.id} 
+                className="flex items-center justify-between p-3 border rounded hover:bg-muted/50 transition-colors cursor-pointer"
+                onClick={() => handleAddProduct(product)}
+              >
                 <div>
                   <div className="font-medium">{product.name}</div>
                   <div className="text-xs text-muted-foreground">
@@ -118,7 +122,10 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
                   <Button 
                     size="sm" 
                     variant="secondary"
-                    onClick={() => handleAddProduct(product)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddProduct(product);
+                    }}
                   >
                     Add
                   </Button>

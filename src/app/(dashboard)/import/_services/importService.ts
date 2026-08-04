@@ -1,6 +1,7 @@
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
 import { createBrowserClient } from '@/lib/supabase/browser';
+import { InventoryRepository } from '@/src/features/inventory/repository';
 
 export interface ImportRow {
   [key: string]: any;
@@ -119,19 +120,55 @@ export const importService = {
       active_status: true,
     }));
 
-    // Perform bulk upsert for products. Warehouse stock initialization should ideally be handled next.
-    const { error } = await supabase.from('products').upsert(rows, { onConflict: 'product_code' });
+    // Perform bulk upsert for products.
+    const { data: upsertedProducts, error } = await supabase
+      .from('products')
+      .upsert(rows, { onConflict: 'product_code' })
+      .select('id, product_code');
     
-    if (error) {
+    if (error || !upsertedProducts) {
       console.error("Import failed:", error);
       return false;
     }
+
+    const inventoryRepo = new InventoryRepository(supabase);
+    
+    // Sync stock for each row
+    for (const row of data) {
+      const code = String(row.productCode || row["Product Code"] || "").trim();
+      const product = upsertedProducts.find(p => p.product_code === code);
+      if (!product) continue;
+
+      const rawStock = row.currentStock || row["Current Stock"] || row.stock;
+      const stock = rawStock ? Number(rawStock) : 0;
+      const rawMinStock = row.minimumStock || row["Minimum Stock"] || row.minStock;
+      const minStock = rawMinStock ? Number(rawMinStock) : 0;
+      const purchaseBill = String(row.purchaseBillNumber || row["Purchase Bill Number"] || "").trim();
+
+      if (stock > 0) {
+        try {
+          await inventoryRepo.adjustStock(product.id, "increase", stock, "Initial import", purchaseBill || undefined);
+        } catch (e) {
+          console.error("Failed to adjust stock for", code, e);
+        }
+      }
+
+      if (minStock > 0) {
+        try {
+          await inventoryRepo.updateReorderLevel(product.id, minStock);
+        } catch (e) {
+          console.error("Failed to update reorder level for", code, e);
+        }
+      }
+    }
     
     // Log audit
+    const { data: userData } = await supabase.auth.getUser();
     await supabase.from('audit_logs').insert({
       entity: 'Product',
-      entity_id: '00000000-0000-0000-0000-000000000000', // Use real UUID in prod
+      entity_id: upsertedProducts[0]?.id || '00000000-0000-0000-0000-000000000000',
       action: 'Import',
+      user_id: userData?.user?.id,
       description: `Bulk imported ${rows.length} products`
     });
 
@@ -172,6 +209,7 @@ export const importService = {
         "Unit": "Sheets",
         "Current Stock": 100,
         "Minimum Stock": 20,
+        "Purchase Bill Number": "INV-1001",
       },
       {
         "Product Code": "BWP-12-84",
@@ -184,6 +222,7 @@ export const importService = {
         "Unit": "Sheets",
         "Current Stock": 75,
         "Minimum Stock": 15,
+        "Purchase Bill Number": "INV-1002",
       },
       {
         "Product Code": "LAM-01-SF",
@@ -196,6 +235,7 @@ export const importService = {
         "Unit": "Sheets",
         "Current Stock": 200,
         "Minimum Stock": 50,
+        "Purchase Bill Number": "INV-1003",
       },
     ];
 

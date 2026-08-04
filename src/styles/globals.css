@@ -73,3 +73,13 @@
     border-radius: 3px;
   }
 }
+
+@media print {
+  @page {
+    size: A5 portrait;
+    margin: 8mm;
+  }
+  body {
+    margin: 0;
+  }
+}

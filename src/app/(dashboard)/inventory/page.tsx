@@ -12,7 +12,8 @@ import { DeleteProductDialog } from './_components/DeleteProductDialog';
 import { Product } from './_services/inventoryService';
 
 export default function InventoryPage() {
-  const { data: products, isLoading, isError, refetch } = useProducts();
+  const [searchQuery, setSearchQuery] = useState('');
+  const { data: products, isLoading, isError, refetch } = useProducts({ search: searchQuery });
 
   const [stockDialogProduct, setStockDialogProduct] = useState<Product | null>(null);
   const [deleteDialogProduct, setDeleteDialogProduct] = useState<Product | null>(null);
@@ -32,11 +33,13 @@ export default function InventoryPage() {
 
       {isLoading ? (
         <InventoryTableSkeleton />
-      ) : products?.length === 0 ? (
+      ) : products?.length === 0 && !searchQuery ? (
         <InventoryEmptyState />
       ) : (
         <InventoryTable 
           data={products || []} 
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
           onAdjustStock={(p) => setStockDialogProduct(p)}
           onDelete={(p) => setDeleteDialogProduct(p)}
         />

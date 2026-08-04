@@ -67,10 +67,7 @@ export function ExportConfiguration() {
               <Label className="text-xs text-muted-foreground">Group / Sort By</Label>
               <Select
                 value={config.groupBy || "none"}
-                onValueChange={(val: any) => {
-                  setGroupBy(val);
-                  loadPreview();
-                }}
+                onValueChange={(val: any) => setGroupBy(val)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="No Grouping" />
@@ -87,10 +84,7 @@ export function ExportConfiguration() {
               <Label className="text-xs text-muted-foreground">Status</Label>
               <Select
                 value={config.status || "all"}
-                onValueChange={(val) => {
-                  setStatus(val === "all" ? null : val);
-                  loadPreview(); // Reload preview with new filter
-                }}
+                onValueChange={(val) => setStatus(val === "all" ? null : val)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All Statuses" />

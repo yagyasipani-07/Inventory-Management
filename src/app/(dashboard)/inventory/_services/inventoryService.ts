@@ -38,9 +38,9 @@ function mapToUiProduct(
 const getService = () => new InventoryService(createBrowserClient());
 
 export const inventoryService = {
-  async getProducts() {
+  async getProducts(params?: { search?: string; category?: string; brand?: string; purchase_bill_number?: string; page?: number; limit?: number }) {
     const service = getService();
-    const { data } = await service.getProducts({});
+    const { data } = await service.getProducts(params || {});
     const productIds = data.map((p) => p.id);
     const stockMap = await service.getProductStocks(productIds);
     return data.map((p) => mapToUiProduct(p, stockMap[p.id]));

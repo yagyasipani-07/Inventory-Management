@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Table } from '@tanstack/react-table';
 import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
@@ -11,30 +12,43 @@ import {
 
 interface InventoryToolbarProps<TData> {
   table: Table<TData>;
+  searchQuery: string;
+  onSearchChange: (val: string) => void;
   onExportPdf: () => void;
 }
 
 export function InventoryToolbar<TData>({
   table,
+  searchQuery,
+  onSearchChange,
   onExportPdf,
 }: InventoryToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+  const isFiltered = table.getState().columnFilters.length > 0 || searchQuery !== '';
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onSearchChange(localSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [localSearch, onSearchChange]);
 
   return (
     <div className="flex items-center justify-between sticky top-0 z-10 bg-background pb-4 pt-2">
       <div className="flex flex-1 items-center space-x-2">
         <Input
           placeholder="Filter products..."
-          value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
-          onChange={(event) =>
-            table.getColumn('name')?.setFilterValue(event.target.value)
-          }
+          value={localSearch}
+          onChange={(event) => setLocalSearch(event.target.value)}
           className="h-9 w-[150px] lg:w-[350px]"
         />
         {isFiltered && (
           <Button
             variant="ghost"
-            onClick={() => table.resetColumnFilters()}
+            onClick={() => {
+              table.resetColumnFilters();
+              setLocalSearch('');
+            }}
             className="h-9 px-2 lg:px-3"
           >
             Reset
