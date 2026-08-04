@@ -63,6 +63,8 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
         dispatchDate: dispatchDateInput || null,
         transport: transportInput || `${transportNameInput} ${vehicleNumberInput}`.trim(),
         status: markDispatched ? 'Dispatched' : undefined,
+        transportName: transportNameInput || undefined,
+        vehicleNumber: vehicleNumberInput || undefined,
       });
       setIsDispatchModalOpen(false);
       toast.success(markDispatched ? 'Challan marked as Dispatched!' : 'Dispatch info updated');
@@ -71,6 +73,7 @@ export function ChallanDetails({ id }: ChallanDetailsProps) {
       toast.error(err.message || 'Failed to save dispatch info');
     }
   };
+
 
   const totalAmount = challan.items.reduce((sum, item) => {
     const amount = Number(item.amount);

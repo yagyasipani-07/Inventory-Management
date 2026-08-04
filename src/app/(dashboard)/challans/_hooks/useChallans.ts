@@ -86,12 +86,16 @@ export function useUpdateChallanDispatchInfo() {
       dispatchDate,
       transport,
       status,
+      transportName,
+      vehicleNumber,
     }: {
       id: string;
       dispatchDate: string | null;
       transport: string;
       status?: ChallanStatus;
-    }) => challanService.updateDispatchInfo(id, dispatchDate, transport, status),
+      transportName?: string;
+      vehicleNumber?: string;
+    }) => challanService.updateDispatchInfo(id, dispatchDate, transport, status, transportName, vehicleNumber),
     onSuccess: (updatedChallan) => {
       queryClient.invalidateQueries({ queryKey: CHALLANS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });

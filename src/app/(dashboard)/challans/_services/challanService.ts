@@ -7,6 +7,8 @@ export interface ChallanItem {
   id: string;
   productId: string;
   productName: string;
+  productCode: string;
+  productImagePath?: string | null;
   thickness: string;
   size: string;
   quantity: number;
@@ -82,8 +84,15 @@ function mapToUiChallan(dbChallan: any): Challan {
       id: li.id,
       productId: li.product_id,
       productName: li.products?.product_name || 'Product',
-      thickness: 'N/A', 
-      size: 'N/A',
+      productCode: li.products?.product_code || '',
+      productImagePath: li.products?.product_image_path || null,
+      // thickness and size are stored in products table numeric columns;
+      // build a human-readable string for display in the print template
+      thickness: li.products?.thickness != null ? `${li.products.thickness} mm` : '',
+      size:
+        li.products?.length != null && li.products?.width != null
+          ? `${li.products.length} × ${li.products.width}`
+          : '',
       quantity: li.quantity,
       rate: '',
       amount: '',
