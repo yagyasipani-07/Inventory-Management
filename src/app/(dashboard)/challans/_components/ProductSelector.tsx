@@ -85,9 +85,9 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
   };
 
   return (
-    <div className="grid md:grid-cols-2 gap-6 h-[500px]">
+    <div className="grid md:grid-cols-2 gap-6 h-[500px] lg:h-[600px]">
       {/* Product Catalog */}
-      <div className="flex flex-col border rounded-md">
+      <div className="flex flex-col border rounded-md overflow-hidden bg-background">
         <div className="p-4 border-b bg-muted/30">
           <h3 className="font-semibold mb-3">Product Catalog</h3>
           <div className="relative">
@@ -100,7 +100,7 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
             />
           </div>
         </div>
-        <ScrollArea className="flex-1 p-2">
+        <ScrollArea className="flex-1 p-2 min-h-0">
           <div className="space-y-2">
             {filteredProducts.map(product => (
               <div 
@@ -137,16 +137,16 @@ export function ProductSelector({ products, selectedItems, onChange }: ProductSe
       </div>
 
       {/* Selected Items */}
-      <div className="flex flex-col border rounded-md">
+      <div className="flex flex-col border rounded-md overflow-hidden bg-background">
         <div className="p-4 border-b bg-muted/30 flex justify-between items-center">
           <h3 className="font-semibold">Selected Items ({selectedItems.length})</h3>
           <div className="text-sm">
             Total Qty: <span className="font-bold">{selectedItems.reduce((acc, curr) => acc + curr.quantity, 0)}</span>
           </div>
         </div>
-        <ScrollArea className="flex-1">
+        <ScrollArea className="flex-1 min-h-0">
           {selectedItems.length === 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm py-10">
               No products selected
             </div>
           ) : (
