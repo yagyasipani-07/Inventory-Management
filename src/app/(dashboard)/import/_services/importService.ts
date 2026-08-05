@@ -121,10 +121,12 @@ export const importService = {
     }));
 
     // Perform bulk upsert for products.
-    const { data: upsertedProducts, error } = await supabase
+    const { data: upsertedData, error } = await supabase
       .from('products')
       .upsert(rows, { onConflict: 'product_code' })
       .select('id, product_code');
+
+    const upsertedProducts = (upsertedData as unknown) as { id: string; product_code: string }[] | null;
     
     if (error || !upsertedProducts) {
       console.error("Import failed:", error);
