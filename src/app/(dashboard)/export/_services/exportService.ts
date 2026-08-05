@@ -21,15 +21,25 @@ export const exportService = {
     const supabase = getClient();
     
     if (config.dataset === "Inventory") {
-      let query = supabase.from('products').select('*, stock_movements(purchase_bill_number, created_at)').is('deleted_at', null);
+      let query = supabase.from('products')
+        .select('*, stock_movements(purchase_bill_number, created_at)')
+        .is('deleted_at', null)
+        .order('created_at', { foreignTable: 'stock_movements', ascending: false })
+        .limit(10, { foreignTable: 'stock_movements' });
       if (config.status === "active") query = query.eq('active_status', true);
       else if (config.status === "inactive") query = query.eq('active_status', false);
 
       const { data: products } = await query;
       const { data: stocks } = await supabase.from('warehouse_stock').select('*');
       
+      const stockMap = new Map();
+      (stocks || []).forEach((s: any) => {
+        if (!stockMap.has(s.product_id)) stockMap.set(s.product_id, []);
+        stockMap.get(s.product_id).push(s);
+      });
+
       let rows = (products || []).map((p: any) => {
-        const productStocks = (stocks || []).filter((s: any) => s.product_id === p.id);
+        const productStocks = stockMap.get(p.id) || [];
         const totalQty = productStocks.reduce((acc: number, s: any) => acc + (s.current_quantity || 0), 0);
         const reservedQty = productStocks.reduce((acc: number, s: any) => acc + (s.reserved_quantity || 0), 0);
         

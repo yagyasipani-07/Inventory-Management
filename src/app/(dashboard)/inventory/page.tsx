@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { InventoryHeader } from './_components/InventoryHeader';
 import { InventoryTable } from './_components/InventoryTable';
 import { InventoryEmptyState } from './_components/InventoryEmptyState';
@@ -13,7 +13,16 @@ import { Product } from './_services/inventoryService';
 
 export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: products, isLoading, isError, refetch } = useProducts({ search: searchQuery });
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const { data: products, isLoading, isError, refetch } = useProducts({ search: debouncedSearch });
 
   const [stockDialogProduct, setStockDialogProduct] = useState<Product | null>(null);
   const [deleteDialogProduct, setDeleteDialogProduct] = useState<Product | null>(null);

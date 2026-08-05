@@ -44,7 +44,12 @@ export class InventoryRepository {
       .is("deleted_at", null);
 
     if (params.search) {
-      query = query.or(`product_code.ilike.%${params.search}%,product_name.ilike.%${params.search}%`);
+      let orQuery = `product_code.ilike.%${params.search}%,product_name.ilike.%${params.search}%`;
+      const num = Number(params.search);
+      if (!isNaN(num) && params.search.trim() !== '') {
+        orQuery += `,thickness.eq.${num},length.eq.${num},width.eq.${num}`;
+      }
+      query = query.or(orQuery);
     }
     if (params.category) query = query.eq("category", params.category);
     if (params.brand) query = query.eq("brand", params.brand);

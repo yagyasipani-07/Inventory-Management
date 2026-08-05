@@ -36,14 +36,18 @@ export function WarehouseClient() {
     return stock.filter((item) => {
       if (debouncedSearchQuery) {
         const query = debouncedSearchQuery.toLowerCase();
-        const matchesSearch = item.name.toLowerCase().includes(query);
+        const matchesSearch =
+          item.name.toLowerCase().includes(query) ||
+          item.code.toLowerCase().includes(query) ||
+          item.thickness.toLowerCase().includes(query) ||
+          item.size.toLowerCase().includes(query);
         
         if (!matchesSearch) return false;
       }
 
       return true;
     });
-  }, [stock, searchQuery]);
+  }, [stock, debouncedSearchQuery]);
 
   const handleExport = async () => {
     try {
