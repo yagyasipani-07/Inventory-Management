@@ -11,16 +11,8 @@ export interface ExportConfig {
   format: ExportFormat;
   dateRange: { from: Date; to: Date } | null;
   status: string | null;
-  groupBy?: "category" | "product_name" | "none";
+  category: string | null;
 }
-
-export const getGroupField = (dataset: ExportDataset, groupBy: string | null): string | null => {
-  if (!groupBy || groupBy === "none") return null;
-  if (dataset === "Inventory" || dataset === "Warehouse Stock") {
-    return groupBy === "category" ? "Category" : "Product Name";
-  }
-  return null;
-};
 
 const getClient = () => createBrowserClient();
 
@@ -32,6 +24,26 @@ const extractRelation = (relation: unknown): any => {
 };
 
 export const exportService = {
+  /**
+   * Fetch distinct, non-null product categories from the database.
+   * Returns a sorted array of unique category strings.
+   */
+  async fetchCategories(): Promise<string[]> {
+    const supabase = getClient();
+    const { data } = await supabase
+      .from('products')
+      .select('category')
+      .not('category', 'is', null)
+      .not('category', 'eq', '')
+      .is('deleted_at', null);
+
+    if (!data) return [];
+
+    const unique = [...new Set(data.map((p: any) => String(p.category).trim()).filter(Boolean))];
+    unique.sort((a, b) => a.localeCompare(b));
+    return unique;
+  },
+
   async fetchData(config: ExportConfig): Promise<any[]> {
     const supabase = getClient();
     
@@ -43,6 +55,7 @@ export const exportService = {
         .limit(10, { foreignTable: 'stock_movements' });
       if (config.status === "active") query = query.eq('active_status', true);
       else if (config.status === "inactive") query = query.eq('active_status', false);
+      if (config.category) query = query.eq('category', config.category);
 
       const { data: products } = await query;
       const { data: stocks } = await supabase.from('warehouse_stock').select('*');
@@ -53,7 +66,7 @@ export const exportService = {
         stockMap.get(s.product_id).push(s);
       });
 
-      let rows: Record<string, any>[] = (products || []).map((p: any) => {
+      const rows: Record<string, any>[] = (products || []).map((p: any) => {
         const productStocks = stockMap.get(p.id) || [];
         const totalQty = productStocks.reduce((acc: number, s: any) => acc + (s.current_quantity || 0), 0);
         const reservedQty = productStocks.reduce((acc: number, s: any) => acc + (s.reserved_quantity || 0), 0);
@@ -77,32 +90,32 @@ export const exportService = {
         };
       });
 
-      const groupKey = getGroupField(config.dataset, config.groupBy || null);
-      if (groupKey) {
-        rows.sort((a, b) => String(a[groupKey] || "").localeCompare(String(b[groupKey] || "")));
-      }
       return rows;
     } 
     else if (config.dataset === "Warehouse Stock") {
-      const { data } = await supabase.from('warehouse_stock').select('*, products(*), warehouses(warehouse_name)');
-      let rows: Record<string, any>[] = (data || []).map((p: any) => {
-        const product = extractRelation(p.products);
-        const warehouse = extractRelation(p.warehouses);
-        
-        return {
-          "Category": String(product?.category || "Uncategorized"),
-          "Product Code": String(product?.product_code || "N/A"),
-          "Product Name": String(product?.product_name || "N/A"),
-          "Warehouse": String(warehouse?.warehouse_name || "Unknown"),
-          "Available Qty": Number((p.current_quantity || 0) - (p.reserved_quantity || 0)),
-          "Total Qty": Number(p.current_quantity || 0),
-        };
-      });
+      let query = supabase.from('warehouse_stock').select('*, products(*), warehouses(warehouse_name)');
+      
+      // Category filtering is applied post-fetch since the category lives on the joined products table
+      const { data } = await query;
+      const rows: Record<string, any>[] = (data || [])
+        .map((p: any) => {
+          const product = extractRelation(p.products);
+          const warehouse = extractRelation(p.warehouses);
+          
+          return {
+            "Category": String(product?.category || "Uncategorized"),
+            "Product Code": String(product?.product_code || "N/A"),
+            "Product Name": String(product?.product_name || "N/A"),
+            "Warehouse": String(warehouse?.warehouse_name || "Unknown"),
+            "Available Qty": Number((p.current_quantity || 0) - (p.reserved_quantity || 0)),
+            "Total Qty": Number(p.current_quantity || 0),
+          };
+        })
+        .filter((row) => {
+          if (!config.category) return true;
+          return row["Category"] === config.category;
+        });
 
-      const groupKey = getGroupField(config.dataset, config.groupBy || null);
-      if (groupKey) {
-        rows.sort((a, b) => String(a[groupKey] || "").localeCompare(String(b[groupKey] || "")));
-      }
       return rows;
     } 
     else if (config.dataset === "Customers") {
@@ -148,28 +161,8 @@ export const exportService = {
     return [];
   },
 
-  downloadCSV(data: any[], filename: string, dataset: string, groupBy?: string) {
-    let finalData = data;
-    const groupKey = getGroupField(dataset as ExportDataset, groupBy || null);
-    
-    if (groupKey && data.length > 0) {
-      finalData = [];
-      let currentGroup: string | null = null;
-      
-      data.forEach(row => {
-        const rowGroup = String(row[groupKey] || "Unknown");
-        if (rowGroup !== currentGroup) {
-          if (currentGroup !== null) {
-            finalData.push({}); 
-          }
-          currentGroup = rowGroup;
-          finalData.push({ [groupKey]: `--- Group: ${currentGroup} ---` });
-        }
-        finalData.push(row);
-      });
-    }
-
-    const csv = Papa.unparse(finalData);
+  downloadCSV(data: any[], filename: string) {
+    const csv = Papa.unparse(data);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -181,119 +174,30 @@ export const exportService = {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
-    return false; // Not chunked
   },
 
-  async downloadExcel(data: any[], filename: string, dataset: string, groupBy?: string): Promise<boolean> {
+  async downloadExcel(data: any[], filename: string, dataset: string): Promise<void> {
     const workbook = XLSX.utils.book_new();
-    const groupKey = getGroupField(dataset as ExportDataset, groupBy || null);
-    let usedFallback = false;
 
-    if (groupKey && data.length > 0) {
-      const groupedData: Record<string, any[]> = {};
-      
-      data.forEach(row => {
-        const groupValue = String(row[groupKey] || "Unknown");
-        if (!groupedData[groupValue]) groupedData[groupValue] = [];
-        groupedData[groupValue].push(row);
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const colWidths: { wch: number }[] = [];
+    const keys = Object.keys(data[0] || {});
+    keys.forEach((key) => {
+      let maxLen = key.length;
+      const sample = data.slice(0, 200);
+      sample.forEach((row) => {
+        const val = row[key] ? String(row[key]) : "";
+        if (val.length > maxLen) maxLen = val.length;
       });
-
-      const groupKeys = Object.keys(groupedData);
-
-      if (groupKeys.length > 20) {
-        // CARDINALITY GUARD: Too many groups, fallback to single sheet with divider rows
-        usedFallback = true;
-        let finalData: any[] = [];
-        let currentGroup: string | null = null;
-        
-        data.forEach(row => {
-          const rowGroup = String(row[groupKey] || "Unknown");
-          if (rowGroup !== currentGroup) {
-            if (currentGroup !== null) {
-              finalData.push({}); 
-            }
-            currentGroup = rowGroup;
-            finalData.push({ [groupKey]: `--- Group: ${currentGroup} ---` });
-          }
-          finalData.push(row);
-        });
-
-        const worksheet = XLSX.utils.json_to_sheet(finalData);
-        const colWidths: { wch: number }[] = [];
-        const keys = Object.keys(finalData[0] || {});
-        keys.forEach((key) => {
-          let maxLen = key.length;
-          // Sample up to 200 rows
-          const sample = finalData.slice(0, 200);
-          sample.forEach((row) => {
-            const val = row[key] ? String(row[key]) : "";
-            if (val.length > maxLen) maxLen = val.length;
-          });
-          colWidths.push({ wch: maxLen + 2 });
-        });
-        worksheet["!cols"] = colWidths;
-        XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31).replace(/[\[\]*\\/?]/g, ''));
-      } else {
-        // Less than 20 groups, generate multiple sheets
-        for (let i = 0; i < groupKeys.length; i++) {
-          const groupValue = groupKeys[i];
-          const groupRows = groupedData[groupValue];
-          const worksheet = XLSX.utils.json_to_sheet(groupRows);
-          
-          const colWidths: { wch: number }[] = [];
-          const keys = Object.keys(groupRows[0] || {});
-          keys.forEach((key) => {
-            let maxLen = key.length;
-            // Sample up to 200 rows
-            const sample = groupRows.slice(0, 200);
-            sample.forEach((row) => {
-              const val = row[key] ? String(row[key]) : "";
-              if (val.length > maxLen) maxLen = val.length;
-            });
-            colWidths.push({ wch: maxLen + 2 });
-          });
-          worksheet["!cols"] = colWidths;
-
-          let sheetName = String(groupValue).substring(0, 31).replace(/[\[\]*\\/?]/g, '').trim() || "Sheet";
-          let counter = 1;
-          let finalSheetName = sheetName;
-          while(workbook.SheetNames.includes(finalSheetName)) {
-             finalSheetName = `${sheetName.substring(0, 27)}(${counter})`;
-             counter++;
-          }
-          
-          XLSX.utils.book_append_sheet(workbook, worksheet, finalSheetName);
-
-          // Yield to UI thread every 5 groups
-          if ((i + 1) % 5 === 0) {
-            await new Promise(r => setTimeout(r, 0));
-          }
-        }
-      }
-
-    } else {
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      const colWidths: { wch: number }[] = [];
-      const keys = Object.keys(data[0] || {});
-      keys.forEach((key) => {
-        let maxLen = key.length;
-        const sample = data.slice(0, 200);
-        sample.forEach((row) => {
-          const val = row[key] ? String(row[key]) : "";
-          if (val.length > maxLen) maxLen = val.length;
-        });
-        colWidths.push({ wch: maxLen + 2 });
-      });
-      worksheet["!cols"] = colWidths;
-      XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31).replace(/[\[\]*\\/?]/g, ''));
-    }
+      colWidths.push({ wch: maxLen + 2 });
+    });
+    worksheet["!cols"] = colWidths;
+    XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31).replace(/[\[\]*\\/?]/g, ''));
 
     XLSX.writeFile(workbook, `${filename}.xlsx`);
-    return usedFallback;
   },
 
-  async downloadPDF(data: any[], filename: string, dataset: string, groupBy?: string): Promise<boolean> {
-    return await printPdfReport(`${dataset} Report`, data, filename, dataset, groupBy);
+  async downloadPDF(data: any[], filename: string, dataset: string): Promise<void> {
+    await printPdfReport(`${dataset} Report`, data, filename);
   }
 };

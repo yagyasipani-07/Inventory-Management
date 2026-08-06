@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ExportConfig, ExportDataset, ExportFormat, exportService, getGroupField } from "../_services/exportService";
+import { ExportConfig, ExportDataset, ExportFormat, exportService } from "../_services/exportService";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -8,13 +8,16 @@ interface ExportState {
   isExporting: boolean;
   previewData: any[];
   isPreviewLoading: boolean;
+  categories: string[];
+  isCategoriesLoading: boolean;
 
   setDataset: (dataset: ExportDataset) => void;
   setFormat: (format: ExportFormat) => void;
   setDateRange: (range: { from: Date; to: Date } | null) => void;
   setStatus: (status: string | null) => void;
-  setGroupBy: (groupBy: "category" | "product_name" | "none") => void;
+  setCategory: (category: string | null) => void;
   
+  loadCategories: () => Promise<void>;
   loadPreview: () => Promise<void>;
   executeExport: () => Promise<void>;
 }
@@ -25,29 +28,40 @@ export const useExport = create<ExportState>((set, get) => ({
     format: "excel",
     dateRange: null,
     status: null,
-    groupBy: "none",
+    category: null,
   },
   isExporting: false,
   previewData: [],
   isPreviewLoading: false,
+  categories: [],
+  isCategoriesLoading: false,
 
   setDataset: (dataset) => { 
-    set((state) => {
-      const groupField = getGroupField(dataset, state.config.groupBy || null);
-      return { 
-        config: { 
-          ...state.config, 
-          dataset,
-          groupBy: groupField ? state.config.groupBy : "none"
-        } 
-      };
-    }); 
+    set((state) => ({
+      config: { 
+        ...state.config, 
+        dataset,
+        // Reset category filter when switching to a dataset that doesn't have categories
+        category: (dataset === "Inventory" || dataset === "Warehouse Stock") ? state.config.category : null,
+      } 
+    })); 
     get().loadPreview(); 
   },
   setFormat: (format) => set((state) => ({ config: { ...state.config, format } })),
   setDateRange: (dateRange) => { set((state) => ({ config: { ...state.config, dateRange } })); get().loadPreview(); },
   setStatus: (status) => { set((state) => ({ config: { ...state.config, status } })); get().loadPreview(); },
-  setGroupBy: (groupBy) => { console.log("setGroupBy called", groupBy); set((state) => ({ config: { ...state.config, groupBy } })); },
+  setCategory: (category) => { set((state) => ({ config: { ...state.config, category } })); get().loadPreview(); },
+
+  loadCategories: async () => {
+    set({ isCategoriesLoading: true });
+    try {
+      const categories = await exportService.fetchCategories();
+      set({ categories, isCategoriesLoading: false });
+    } catch (error) {
+      console.error(error);
+      set({ categories: [], isCategoriesLoading: false });
+    }
+  },
 
   loadPreview: async () => {
     const { config } = get();
@@ -76,21 +90,16 @@ export const useExport = create<ExportState>((set, get) => ({
     setTimeout(async () => {
       try {
         const filename = `${config.dataset.toLowerCase().replace(/ /g, "-")}-${format(new Date(), "yyyy-MM-dd")}`;
-        let fallbackTriggered = false;
         
         if (config.format === "csv") {
-          exportService.downloadCSV(previewData, filename, config.dataset, config.groupBy);
+          exportService.downloadCSV(previewData, filename);
         } else if (config.format === "pdf") {
-          fallbackTriggered = await exportService.downloadPDF(previewData, filename, config.dataset, config.groupBy);
+          await exportService.downloadPDF(previewData, filename, config.dataset);
         } else {
-          fallbackTriggered = await exportService.downloadExcel(previewData, filename, config.dataset, config.groupBy);
+          await exportService.downloadExcel(previewData, filename, config.dataset);
         }
         
-        if (fallbackTriggered) {
-          toast.warning("Too many groups (>20) — using single-sheet grouping instead");
-        } else {
-          toast.success(`${config.dataset} exported successfully.`);
-        }
+        toast.success(`${config.dataset} exported successfully.`);
       } catch (error) {
         console.error(error);
         toast.error("Export failed.");
