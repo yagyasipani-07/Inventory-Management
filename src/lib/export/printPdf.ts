@@ -1,3 +1,5 @@
+import { ExportDataset, getGroupField } from "@/src/app/(dashboard)/export/_services/exportService";
+
 type ReportRow = Record<string, unknown>;
 
 const escapeHtml = (value: unknown) =>
@@ -8,12 +10,94 @@ const escapeHtml = (value: unknown) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 
-export function printPdfReport(title: string, rows: ReportRow[], filename: string) {
+export async function printPdfReport(title: string, rows: ReportRow[], filename: string, dataset?: string, groupBy?: string): Promise<boolean> {
   const columns = Object.keys(rows[0] || {});
   const generatedOn = new Date().toLocaleString();
 
-  const tableHtml = rows.length
-    ? `
+  let tableHtml = '';
+  const groupKey = getGroupField((dataset as ExportDataset) || "Inventory", groupBy || null);
+  let usedFallback = false;
+  
+  if (rows.length === 0) {
+    tableHtml = '<p class="empty">No data available.</p>';
+  } else if (groupKey) {
+    const groupedData: Record<string, ReportRow[]> = {};
+    
+    rows.forEach(row => {
+      const groupValue = String(row[groupKey] || "Unknown");
+      if (!groupedData[groupValue]) groupedData[groupValue] = [];
+      groupedData[groupValue].push(row);
+    });
+
+    const groupKeys = Object.keys(groupedData);
+
+    if (groupKeys.length > 20) {
+      usedFallback = true;
+      // Fallback: render one flat table with divider rows
+      tableHtml += `
+        <table>
+          <thead>
+            <tr>
+              ${columns.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      let currentGroup: string | null = null;
+      rows.forEach(row => {
+        const rowGroup = String(row[groupKey] || "Unknown");
+        if (rowGroup !== currentGroup) {
+          currentGroup = rowGroup;
+          tableHtml += `
+            <tr class="group-divider">
+              <td colspan="${columns.length}" style="background-color: #f3f4f6; font-weight: bold; padding: 12px 8px; text-align: left;">
+                --- Group: ${escapeHtml(currentGroup)} ---
+              </td>
+            </tr>
+          `;
+        }
+        tableHtml += `
+          <tr>
+            ${columns.map(col => `<td>${escapeHtml(row[col])}</td>`).join('')}
+          </tr>
+        `;
+      });
+      tableHtml += `
+          </tbody>
+        </table>
+      `;
+    } else {
+      for (let i = 0; i < groupKeys.length; i++) {
+        const groupValue = groupKeys[i];
+        const groupRows = groupedData[groupValue];
+        
+        tableHtml += `
+          <div class="group-section">
+            <div class="group-title">Group: ${escapeHtml(groupValue)}</div>
+            <table>
+              <thead>
+                <tr>
+                  ${columns.map(col => `<th>${escapeHtml(col)}</th>`).join('')}
+                </tr>
+              </thead>
+              <tbody>
+                ${groupRows.map(row => `
+                  <tr>
+                    ${columns.map(col => `<td>${escapeHtml(row[col])}</td>`).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+
+        if ((i + 1) % 5 === 0) {
+          await new Promise(r => setTimeout(r, 0));
+        }
+      }
+    }
+  } else {
+    tableHtml = `
       <table>
         <thead>
           <tr>${columns.map((column) => `<th>${escapeHtml(column)}</th>`).join('')}</tr>
@@ -29,8 +113,8 @@ export function printPdfReport(title: string, rows: ReportRow[], filename: strin
             .join('')}
         </tbody>
       </table>
-    `
-    : '<p class="empty">No data available.</p>';
+    `;
+  }
 
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -73,4 +157,6 @@ export function printPdfReport(title: string, rows: ReportRow[], filename: strin
   `);
   printWindow.document.close();
   printWindow.focus();
+
+  return usedFallback;
 }

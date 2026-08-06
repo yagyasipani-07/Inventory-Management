@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import { AuditLog, InsertAuditLog, AuditSearchParams } from "./types";
+import { escapeSupabaseLike } from "@/src/lib/utils";
 import { DatabaseError } from "@/utils/errors";
 
 export class AuditRepository {
@@ -12,7 +13,8 @@ export class AuditRepository {
       .select("*, user_profiles(name, email)", { count: "exact" });
 
     if (params.search) {
-      query = query.or(`description.ilike.%${params.search}%,entity.ilike.%${params.search}%`);
+      const escaped = escapeSupabaseLike(params.search);
+      query = query.or(`description.ilike.${escaped},entity.ilike.${escaped}`);
     }
     if (params.entity) query = query.eq("entity", params.entity);
     if (params.action) query = query.eq("action", params.action);

@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import { Challan, ChallanSearchParams, ValidatedCreateChallan, ValidatedUpdateChallan } from "./types";
+import { escapeSupabaseLike } from "@/src/lib/utils";
 import { DatabaseError } from "@/utils/errors";
 
 export class ChallanRepository {
@@ -13,7 +14,7 @@ export class ChallanRepository {
       .is("deleted_at", null);
 
     if (params.search) {
-      query = query.or(`challan_number.ilike.%${params.search}%`);
+      query = query.or(`challan_number.ilike.${escapeSupabaseLike(params.search)}`);
     }
     if (params.status) query = query.eq("status", params.status);
     if (params.customer_id) query = query.eq("customer_id", params.customer_id);

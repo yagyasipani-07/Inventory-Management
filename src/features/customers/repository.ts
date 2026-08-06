@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import { Customer, InsertCustomer, UpdateCustomer, CustomerSearchParams } from "./types";
+import { escapeSupabaseLike } from "@/src/lib/utils";
 import { DatabaseError } from "@/utils/errors";
 
 export class CustomerRepository {
@@ -13,7 +14,8 @@ export class CustomerRepository {
       .is("deleted_at", null);
 
     if (params.search) {
-      query = query.or(`customer_number.ilike.%${params.search}%,customer_name.ilike.%${params.search}%,phone.ilike.%${params.search}%`);
+      const escaped = escapeSupabaseLike(params.search);
+      query = query.or(`customer_number.ilike.${escaped},customer_name.ilike.${escaped},phone.ilike.${escaped}`);
     }
 
     const page = params.page || 1;

@@ -1,6 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { Database } from "@/types/database.types";
 import { Product, InsertProduct, UpdateProduct, ProductSearchParams } from "./types";
+import { escapeSupabaseLike } from "@/src/lib/utils";
 import { DatabaseError } from "@/utils/errors";
 
 export class InventoryRepository {
@@ -44,7 +45,8 @@ export class InventoryRepository {
       .is("deleted_at", null);
 
     if (params.search) {
-      let orQuery = `product_code.ilike.%${params.search}%,product_name.ilike.%${params.search}%`;
+      const escapedSearch = escapeSupabaseLike(params.search);
+      let orQuery = `product_code.ilike.${escapedSearch},product_name.ilike.${escapedSearch}`;
       const num = Number(params.search);
       if (!isNaN(num) && params.search.trim() !== '') {
         orQuery += `,thickness.eq.${num},length.eq.${num},width.eq.${num}`;

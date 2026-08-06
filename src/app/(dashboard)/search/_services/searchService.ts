@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@/lib/supabase/browser';
+import { escapeSupabaseLike } from "@/src/lib/utils";
 
 export type SearchCategory = 
   | "Products" 
@@ -28,7 +29,7 @@ export const searchService = {
 
     const supabase = getClient();
     const results: SearchResult[] = [];
-    const searchPattern = `%${query}%`;
+    const searchPattern = escapeSupabaseLike(query);
 
     // Search Products
     const { data: products } = await supabase.from('products').select('id, product_name, product_code').or(`product_name.ilike.${searchPattern},product_code.ilike.${searchPattern}`).limit(3);
@@ -39,7 +40,7 @@ export const searchService = {
     (customers as any[])?.forEach(c => results.push({ id: c.id, title: c.customer_name, subtitle: c.customer_number || '', category: 'Customers', href: `/customers/${c.id}`, icon: 'users' }));
 
     // Search Challans
-    const { data: challans } = await supabase.from('challans').select('id, challan_number, status').ilike('challan_number', searchPattern).limit(3);
+    const { data: challans } = await supabase.from('challans').select('id, challan_number, status').ilike('challan_number', `%${query.replace(/[%_\\]/g, '\\$&')}%`).limit(3);
     (challans as any[])?.forEach(ch => results.push({ id: ch.id, title: ch.challan_number, subtitle: ch.status || '', category: 'Challans', href: `/challans/${ch.id}`, icon: 'file-text' }));
 
     // Group by category

@@ -74,8 +74,12 @@ export function ExportConfiguration() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No Grouping (Default)</SelectItem>
-                  <SelectItem value="category">Group by Category</SelectItem>
-                  <SelectItem value="product_name">Group by Product Name</SelectItem>
+                  {(config.dataset === "Inventory" || config.dataset === "Warehouse Stock") && (
+                    <>
+                      <SelectItem value="category">Group by Category</SelectItem>
+                      <SelectItem value="product_name">Group by Product Name</SelectItem>
+                    </>
+                  )}
                 </SelectContent>
               </Select>
             </div>

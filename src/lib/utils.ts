@@ -22,3 +22,10 @@ export function formatCurrency(amount: number): string {
     maximumFractionDigits: 2,
   }).format(amount);
 }
+
+export function escapeSupabaseLike(term: string): string {
+  // Escapes internal double quotes and wraps the pattern in double quotes
+  // This prevents PostgREST from breaking on reserved characters like ( ) ,
+  const escaped = term.replace(/"/g, '""');
+  return `"%${escaped}%"`;
+}

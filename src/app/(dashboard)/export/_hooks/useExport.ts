@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { ExportConfig, ExportDataset, ExportFormat, exportService } from "../_services/exportService";
+import { ExportConfig, ExportDataset, ExportFormat, exportService, getGroupField } from "../_services/exportService";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -31,7 +31,19 @@ export const useExport = create<ExportState>((set, get) => ({
   previewData: [],
   isPreviewLoading: false,
 
-  setDataset: (dataset) => { set((state) => ({ config: { ...state.config, dataset } })); get().loadPreview(); },
+  setDataset: (dataset) => { 
+    set((state) => {
+      const groupField = getGroupField(dataset, state.config.groupBy || null);
+      return { 
+        config: { 
+          ...state.config, 
+          dataset,
+          groupBy: groupField ? state.config.groupBy : "none"
+        } 
+      };
+    }); 
+    get().loadPreview(); 
+  },
   setFormat: (format) => set((state) => ({ config: { ...state.config, format } })),
   setDateRange: (dateRange) => { set((state) => ({ config: { ...state.config, dateRange } })); get().loadPreview(); },
   setStatus: (status) => { set((state) => ({ config: { ...state.config, status } })); get().loadPreview(); },
@@ -60,23 +72,31 @@ export const useExport = create<ExportState>((set, get) => ({
 
     set({ isExporting: true });
     
-    try {
-      const filename = `${config.dataset.toLowerCase().replace(" ", "-")}-${format(new Date(), "yyyy-MM-dd")}`;
-      
-      if (config.format === "csv") {
-        exportService.downloadCSV(previewData, filename);
-      } else if (config.format === "pdf") {
-        exportService.downloadPDF(previewData, filename, config.dataset);
-      } else {
-        exportService.downloadExcel(previewData, filename, config.dataset);
+    // Yield to the UI once before starting work
+    setTimeout(async () => {
+      try {
+        const filename = `${config.dataset.toLowerCase().replace(/ /g, "-")}-${format(new Date(), "yyyy-MM-dd")}`;
+        let fallbackTriggered = false;
+        
+        if (config.format === "csv") {
+          exportService.downloadCSV(previewData, filename, config.dataset, config.groupBy);
+        } else if (config.format === "pdf") {
+          fallbackTriggered = await exportService.downloadPDF(previewData, filename, config.dataset, config.groupBy);
+        } else {
+          fallbackTriggered = await exportService.downloadExcel(previewData, filename, config.dataset, config.groupBy);
+        }
+        
+        if (fallbackTriggered) {
+          toast.warning("Too many groups (>20) — using single-sheet grouping instead");
+        } else {
+          toast.success(`${config.dataset} exported successfully.`);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Export failed.");
+      } finally {
+        set({ isExporting: false });
       }
-      
-      toast.success(`${config.dataset} exported successfully.`);
-    } catch (error) {
-      console.error(error);
-      toast.error("Export failed.");
-    } finally {
-      set({ isExporting: false });
-    }
+    }, 50);
   },
 }));

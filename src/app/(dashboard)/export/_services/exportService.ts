@@ -14,6 +14,14 @@ export interface ExportConfig {
   groupBy?: "category" | "product_name" | "none";
 }
 
+export const getGroupField = (dataset: ExportDataset, groupBy: string | null): string | null => {
+  if (!groupBy || groupBy === "none") return null;
+  if (dataset === "Inventory" || dataset === "Warehouse Stock") {
+    return groupBy === "category" ? "Category" : "Product Name";
+  }
+  return null;
+};
+
 const getClient = () => createBrowserClient();
 
 export const exportService = {
@@ -38,7 +46,7 @@ export const exportService = {
         stockMap.get(s.product_id).push(s);
       });
 
-      let rows = (products || []).map((p: any) => {
+      let rows: Record<string, any>[] = (products || []).map((p: any) => {
         const productStocks = stockMap.get(p.id) || [];
         const totalQty = productStocks.reduce((acc: number, s: any) => acc + (s.current_quantity || 0), 0);
         const reservedQty = productStocks.reduce((acc: number, s: any) => acc + (s.reserved_quantity || 0), 0);
@@ -62,38 +70,36 @@ export const exportService = {
         };
       });
 
-      if (config.groupBy === "category") {
-        rows.sort((a, b) => a["Category"].localeCompare(b["Category"]) || a["Product Name"].localeCompare(b["Product Name"]));
-      } else if (config.groupBy === "product_name") {
-        rows.sort((a, b) => a["Product Name"].localeCompare(b["Product Name"]) || a["Category"].localeCompare(b["Category"]));
+      const groupKey = getGroupField(config.dataset, config.groupBy || null);
+      if (groupKey) {
+        rows.sort((a, b) => String(a[groupKey] || "").localeCompare(String(b[groupKey] || "")));
       }
       return rows;
     } 
     else if (config.dataset === "Warehouse Stock") {
-      const { data } = await supabase.from('warehouse_stock').select('*, products(*)');
-      let rows = (data || []).map((p: any) => ({
+      const { data } = await supabase.from('warehouse_stock').select('*, products(*), warehouses(warehouse_name)');
+      let rows: Record<string, any>[] = (data || []).map((p: any) => ({
         "Category": p.products?.category || "Uncategorized",
         "Product Code": p.products?.product_code || "N/A",
         "Product Name": p.products?.product_name || "N/A",
-        "Warehouse": "Main Warehouse", // Hardcoded for now
+        "Warehouse": p.warehouses?.warehouse_name || "Unknown",
         "Available Qty": (p.current_quantity || 0) - (p.reserved_quantity || 0),
         "Total Qty": p.current_quantity || 0,
       }));
 
-      if (config.groupBy === "category") {
-        rows.sort((a, b) => a["Category"].localeCompare(b["Category"]) || a["Product Name"].localeCompare(b["Product Name"]));
-      } else if (config.groupBy === "product_name") {
-        rows.sort((a, b) => a["Product Name"].localeCompare(b["Product Name"]) || a["Category"].localeCompare(b["Category"]));
+      const groupKey = getGroupField(config.dataset, config.groupBy || null);
+      if (groupKey) {
+        rows.sort((a, b) => String(a[groupKey] || "").localeCompare(String(b[groupKey] || "")));
       }
       return rows;
     } 
     else if (config.dataset === "Customers") {
-      const { data } = await supabase.from('customers').select('*');
+      const { data } = await supabase.from('customers').select('*, challans(id)');
       return (data || []).map((c: any) => ({
         "Customer Name": c.customer_name,
         "Customer Number": c.customer_number || "N/A",
         "Phone": c.phone || "N/A",
-        "Total Challans": 0, // Need aggregation query for this
+        "Total Challans": c.challans?.length || 0,
       }));
     } 
     else if (config.dataset === "Dispatch Challans") {
@@ -122,8 +128,28 @@ export const exportService = {
     return [];
   },
 
-  downloadCSV(data: any[], filename: string) {
-    const csv = Papa.unparse(data);
+  downloadCSV(data: any[], filename: string, dataset: string, groupBy?: string) {
+    let finalData = data;
+    const groupKey = getGroupField(dataset as ExportDataset, groupBy || null);
+    
+    if (groupKey && data.length > 0) {
+      finalData = [];
+      let currentGroup: string | null = null;
+      
+      data.forEach(row => {
+        const rowGroup = String(row[groupKey] || "Unknown");
+        if (rowGroup !== currentGroup) {
+          if (currentGroup !== null) {
+            finalData.push({}); 
+          }
+          currentGroup = rowGroup;
+          finalData.push({ [groupKey]: `--- Group: ${currentGroup} ---` });
+        }
+        finalData.push(row);
+      });
+    }
+
+    const csv = Papa.unparse(finalData);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
@@ -135,28 +161,119 @@ export const exportService = {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    
+    return false; // Not chunked
   },
 
-  downloadExcel(data: any[], filename: string, dataset: string) {
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const colWidths: { wch: number }[] = [];
-    const keys = Object.keys(data[0] || {});
-    keys.forEach((key) => {
-      let maxLen = key.length;
-      data.forEach((row) => {
-        const val = row[key] ? String(row[key]) : "";
-        if (val.length > maxLen) maxLen = val.length;
-      });
-      colWidths.push({ wch: maxLen + 2 });
-    });
-    worksheet["!cols"] = colWidths;
-
+  async downloadExcel(data: any[], filename: string, dataset: string, groupBy?: string): Promise<boolean> {
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31));
+    const groupKey = getGroupField(dataset as ExportDataset, groupBy || null);
+    let usedFallback = false;
+
+    if (groupKey && data.length > 0) {
+      const groupedData: Record<string, any[]> = {};
+      
+      data.forEach(row => {
+        const groupValue = String(row[groupKey] || "Unknown");
+        if (!groupedData[groupValue]) groupedData[groupValue] = [];
+        groupedData[groupValue].push(row);
+      });
+
+      const groupKeys = Object.keys(groupedData);
+
+      if (groupKeys.length > 20) {
+        // CARDINALITY GUARD: Too many groups, fallback to single sheet with divider rows
+        usedFallback = true;
+        let finalData: any[] = [];
+        let currentGroup: string | null = null;
+        
+        data.forEach(row => {
+          const rowGroup = String(row[groupKey] || "Unknown");
+          if (rowGroup !== currentGroup) {
+            if (currentGroup !== null) {
+              finalData.push({}); 
+            }
+            currentGroup = rowGroup;
+            finalData.push({ [groupKey]: `--- Group: ${currentGroup} ---` });
+          }
+          finalData.push(row);
+        });
+
+        const worksheet = XLSX.utils.json_to_sheet(finalData);
+        const colWidths: { wch: number }[] = [];
+        const keys = Object.keys(finalData[0] || {});
+        keys.forEach((key) => {
+          let maxLen = key.length;
+          // Sample up to 200 rows
+          const sample = finalData.slice(0, 200);
+          sample.forEach((row) => {
+            const val = row[key] ? String(row[key]) : "";
+            if (val.length > maxLen) maxLen = val.length;
+          });
+          colWidths.push({ wch: maxLen + 2 });
+        });
+        worksheet["!cols"] = colWidths;
+        XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31).replace(/[\[\]*\\/?]/g, ''));
+      } else {
+        // Less than 20 groups, generate multiple sheets
+        for (let i = 0; i < groupKeys.length; i++) {
+          const groupValue = groupKeys[i];
+          const groupRows = groupedData[groupValue];
+          const worksheet = XLSX.utils.json_to_sheet(groupRows);
+          
+          const colWidths: { wch: number }[] = [];
+          const keys = Object.keys(groupRows[0] || {});
+          keys.forEach((key) => {
+            let maxLen = key.length;
+            // Sample up to 200 rows
+            const sample = groupRows.slice(0, 200);
+            sample.forEach((row) => {
+              const val = row[key] ? String(row[key]) : "";
+              if (val.length > maxLen) maxLen = val.length;
+            });
+            colWidths.push({ wch: maxLen + 2 });
+          });
+          worksheet["!cols"] = colWidths;
+
+          let sheetName = String(groupValue).substring(0, 31).replace(/[\[\]*\\/?]/g, '').trim() || "Sheet";
+          let counter = 1;
+          let finalSheetName = sheetName;
+          while(workbook.SheetNames.includes(finalSheetName)) {
+             finalSheetName = `${sheetName.substring(0, 27)}(${counter})`;
+             counter++;
+          }
+          
+          XLSX.utils.book_append_sheet(workbook, worksheet, finalSheetName);
+
+          // Yield to UI thread every 5 groups
+          if ((i + 1) % 5 === 0) {
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+      }
+
+    } else {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      const colWidths: { wch: number }[] = [];
+      const keys = Object.keys(data[0] || {});
+      keys.forEach((key) => {
+        let maxLen = key.length;
+        const sample = data.slice(0, 200);
+        sample.forEach((row) => {
+          const val = row[key] ? String(row[key]) : "";
+          if (val.length > maxLen) maxLen = val.length;
+        });
+        colWidths.push({ wch: maxLen + 2 });
+      });
+      worksheet["!cols"] = colWidths;
+      XLSX.utils.book_append_sheet(workbook, worksheet, dataset.substring(0, 31).replace(/[\[\]*\\/?]/g, ''));
+    }
+
     XLSX.writeFile(workbook, `${filename}.xlsx`);
+    return usedFallback;
   },
 
-  downloadPDF(data: any[], filename: string, dataset: string) {
-    printPdfReport(`${dataset} Report`, data, filename);
+  async downloadPDF(data: any[], filename: string, dataset: string, groupBy?: string): Promise<boolean> {
+    return await printPdfReport(`${dataset} Report`, data, filename, dataset, groupBy);
   }
 };
