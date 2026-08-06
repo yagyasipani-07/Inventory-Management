@@ -47,7 +47,7 @@ export const useExport = create<ExportState>((set, get) => ({
   setFormat: (format) => set((state) => ({ config: { ...state.config, format } })),
   setDateRange: (dateRange) => { set((state) => ({ config: { ...state.config, dateRange } })); get().loadPreview(); },
   setStatus: (status) => { set((state) => ({ config: { ...state.config, status } })); get().loadPreview(); },
-  setGroupBy: (groupBy) => { set((state) => ({ config: { ...state.config, groupBy } })); get().loadPreview(); },
+  setGroupBy: (groupBy) => { console.log("setGroupBy called", groupBy); set((state) => ({ config: { ...state.config, groupBy } })); },
 
   loadPreview: async () => {
     const { config } = get();
