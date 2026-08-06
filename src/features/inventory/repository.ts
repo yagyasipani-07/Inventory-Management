@@ -175,54 +175,22 @@ export class InventoryRepository {
     const { data: whs }: any = await this.supabase.from("warehouses").select("id").eq("active_status", true).limit(1);
     const targetWhId = whs && whs[0]?.id ? whs[0].id : "e52b1b11-5374-4b52-a5e3-1b93f1d9396e";
 
-    const { data: stockRow }: any = await this.supabase
-      .from("warehouse_stock")
-      .select("*")
-      .eq("warehouse_id", targetWhId)
-      .eq("product_id", productId)
-      .single();
-
-    const currentQty = stockRow?.current_quantity || 0;
     const change = type === "increase" ? amount : -amount;
-    const newQty = currentQty + change;
 
-    if (newQty < 0) {
-      throw new DatabaseError("Cannot decrease stock below 0.");
+    const { error } = await (this.supabase.rpc as any)("process_stock_movement", {
+      p_warehouse_id: targetWhId,
+      p_product_id: productId,
+      p_quantity_change: change,
+      p_movement_type: "Adjustment",
+      p_reference_id: null,
+      p_remarks: reason,
+      p_user_id: null,
+      p_purchase_bill_number: purchaseBillNumber || null
+    });
+
+    if (error) {
+      throw new DatabaseError("Failed to adjust stock atomically: " + error.message, error);
     }
-
-    if (stockRow) {
-      await this.supabase
-        .from("warehouse_stock")
-        .update({ current_quantity: newQty, updated_at: new Date().toISOString() } as never)
-        .eq("id", stockRow.id);
-    } else {
-      await this.supabase
-        .from("warehouse_stock")
-        .insert([
-          {
-            warehouse_id: targetWhId,
-            product_id: productId,
-            current_quantity: newQty,
-            reserved_quantity: 0,
-            reorder_level: 10,
-          },
-        ] as any);
-    }
-
-    await this.supabase
-      .from("stock_movements")
-      .insert([
-        {
-          warehouse_id: targetWhId,
-          product_id: productId,
-          previous_quantity: currentQty,
-          quantity_change: change,
-          new_quantity: newQty,
-          movement_type: "Adjustment",
-          remarks: reason,
-          purchase_bill_number: purchaseBillNumber || null,
-        },
-      ] as any);
   }
 
   async updateReorderLevel(productId: string, reorderLevel: number): Promise<void> {

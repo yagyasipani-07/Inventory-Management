@@ -111,7 +111,7 @@ export class ChallanRepository {
 
   async updateChallanStatus(id: string, status: string, dispatchDate?: string | null): Promise<any> {
     if (status === "Dispatched") {
-      const { error: rpcError } = await (this.supabase.rpc as any)("dispatch_challan", {
+      const { error: rpcError } = await (this.supabase.rpc as any)("execute_dispatch_challan", {
         p_challan_id: id,
         p_warehouse_id: null,
         p_user_id: null,
@@ -151,7 +151,7 @@ export class ChallanRepository {
     }
   ): Promise<any> {
     if (data.status === "Dispatched") {
-      const { error: rpcError } = await (this.supabase.rpc as any)("dispatch_challan", {
+      const { error: rpcError } = await (this.supabase.rpc as any)("execute_dispatch_challan", {
         p_challan_id: id,
         p_warehouse_id: data.warehouse_id || null,
         p_user_id: null,
