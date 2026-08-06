@@ -38,11 +38,11 @@ export function RecentChallansTable({ challans }: RecentChallansTableProps) {
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead className="w-[120px]">Challan No</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className="hidden sm:table-cell">Date</TableHead>
-                <TableHead className="text-right">Items</TableHead>
-                <TableHead className="w-[100px]">Status</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Challan No</TableHead>
+                <TableHead className="min-w-[120px]">Customer</TableHead>
+                <TableHead className="hidden sm:table-cell whitespace-nowrap">Date</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Items</TableHead>
+                <TableHead className="w-[100px] whitespace-nowrap">Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -52,17 +52,17 @@ export function RecentChallansTable({ challans }: RecentChallansTableProps) {
                   className="cursor-pointer hover:bg-muted/50 transition-colors"
                   onClick={() => router.push(`/challans/${challan.id}`)}
                 >
-                  <TableCell className="font-medium text-xs text-muted-foreground">{challan.challanNo}</TableCell>
-                  <TableCell className="font-medium truncate max-w-[150px]">{challan.customer}</TableCell>
-                  <TableCell className="text-muted-foreground hidden sm:table-cell">
+                  <TableCell className="font-medium text-xs text-muted-foreground whitespace-nowrap">{challan.challanNo}</TableCell>
+                  <TableCell className="font-medium truncate max-w-[120px]">{challan.customer}</TableCell>
+                  <TableCell className="text-muted-foreground hidden sm:table-cell whitespace-nowrap">
                     {new Date(challan.date).toLocaleDateString('en-IN', {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric',
                     })}
                   </TableCell>
-                  <TableCell className="text-right font-medium">{challan.items}</TableCell>
-                  <TableCell>{getStatusBadge(challan.status)}</TableCell>
+                  <TableCell className="text-right font-medium whitespace-nowrap">{challan.items}</TableCell>
+                  <TableCell className="whitespace-nowrap">{getStatusBadge(challan.status)}</TableCell>
                 </TableRow>
               ))}
               {challans.length === 0 && (
