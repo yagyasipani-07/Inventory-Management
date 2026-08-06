@@ -24,6 +24,13 @@ export const getGroupField = (dataset: ExportDataset, groupBy: string | null): s
 
 const getClient = () => createBrowserClient();
 
+const extractRelation = (relation: unknown): any => {
+  if (Array.isArray(relation)) {
+    return relation.length > 0 ? relation[0] : null;
+  }
+  return relation || null;
+};
+
 export const exportService = {
   async fetchData(config: ExportConfig): Promise<any[]> {
     const supabase = getClient();
@@ -58,15 +65,15 @@ export const exportService = {
         const latestBill = movements.length > 0 ? movements[0].purchase_bill_number : "N/A";
 
         return {
-          "Category": p.category || "Uncategorized",
-          "Product Code": p.product_code,
-          "Product Name": p.product_name || "N/A",
-          "Brand": p.brand || "N/A",
-          "Thickness (mm)": p.thickness || 0,
-          "Current Stock": totalQty,
-          "Reserved Stock": reservedQty,
-          "Available Stock": totalQty - reservedQty,
-          "Latest Purchase Bill": latestBill,
+          "Category": String(p.category || "Uncategorized"),
+          "Product Code": String(p.product_code || "N/A"),
+          "Product Name": String(p.product_name || "N/A"),
+          "Brand": String(p.brand || "N/A"),
+          "Thickness (mm)": Number(p.thickness || 0),
+          "Current Stock": Number(totalQty),
+          "Reserved Stock": Number(reservedQty),
+          "Available Stock": Number(totalQty - reservedQty),
+          "Latest Purchase Bill": String(latestBill),
         };
       });
 
@@ -78,14 +85,19 @@ export const exportService = {
     } 
     else if (config.dataset === "Warehouse Stock") {
       const { data } = await supabase.from('warehouse_stock').select('*, products(*), warehouses(warehouse_name)');
-      let rows: Record<string, any>[] = (data || []).map((p: any) => ({
-        "Category": p.products?.category || "Uncategorized",
-        "Product Code": p.products?.product_code || "N/A",
-        "Product Name": p.products?.product_name || "N/A",
-        "Warehouse": p.warehouses?.warehouse_name || "Unknown",
-        "Available Qty": (p.current_quantity || 0) - (p.reserved_quantity || 0),
-        "Total Qty": p.current_quantity || 0,
-      }));
+      let rows: Record<string, any>[] = (data || []).map((p: any) => {
+        const product = extractRelation(p.products);
+        const warehouse = extractRelation(p.warehouses);
+        
+        return {
+          "Category": String(product?.category || "Uncategorized"),
+          "Product Code": String(product?.product_code || "N/A"),
+          "Product Name": String(product?.product_name || "N/A"),
+          "Warehouse": String(warehouse?.warehouse_name || "Unknown"),
+          "Available Qty": Number((p.current_quantity || 0) - (p.reserved_quantity || 0)),
+          "Total Qty": Number(p.current_quantity || 0),
+        };
+      });
 
       const groupKey = getGroupField(config.dataset, config.groupBy || null);
       if (groupKey) {
@@ -95,12 +107,15 @@ export const exportService = {
     } 
     else if (config.dataset === "Customers") {
       const { data } = await supabase.from('customers').select('*, challans(id)');
-      return (data || []).map((c: any) => ({
-        "Customer Name": c.customer_name,
-        "Customer Number": c.customer_number || "N/A",
-        "Phone": c.phone || "N/A",
-        "Total Challans": c.challans?.length || 0,
-      }));
+      return (data || []).map((c: any) => {
+        const challans = Array.isArray(c.challans) ? c.challans : (c.challans ? [c.challans] : []);
+        return {
+          "Customer Name": String(c.customer_name || "Unknown"),
+          "Customer Number": String(c.customer_number || "N/A"),
+          "Phone": String(c.phone || "N/A"),
+          "Total Challans": Number(challans.length),
+        };
+      });
     } 
     else if (config.dataset === "Dispatch Challans") {
       let query = supabase.from('challans').select('*, customers(customer_name), challan_items(quantity)');
@@ -116,13 +131,18 @@ export const exportService = {
       }
 
       const { data } = await query;
-      return (data || []).map((ch: any) => ({
-        "Challan Number": ch.challan_number,
-        "Date": ch.created_at ? ch.created_at.split('T')[0] : "N/A",
-        "Customer": ch.customers?.customer_name || "Unknown",
-        "Total Items": ch.challan_items?.reduce((a: number, b: any) => a + (b.quantity || 0), 0) || 0,
-        "Status": ch.status || "Draft",
-      }));
+      return (data || []).map((ch: any) => {
+        const customer = extractRelation(ch.customers);
+        const items = Array.isArray(ch.challan_items) ? ch.challan_items : (ch.challan_items ? [ch.challan_items] : []);
+        
+        return {
+          "Challan Number": String(ch.challan_number || "Unknown"),
+          "Date": String(ch.created_at ? ch.created_at.split('T')[0] : "N/A"),
+          "Customer": String(customer?.customer_name || "Unknown"),
+          "Total Items": Number(items.reduce((a: number, b: any) => a + (b.quantity || 0), 0)),
+          "Status": String(ch.status || "Draft"),
+        };
+      });
     }
     
     return [];
