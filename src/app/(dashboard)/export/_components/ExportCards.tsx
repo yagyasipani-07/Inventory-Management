@@ -4,7 +4,6 @@ import { useExport } from "../_hooks/useExport";
 import { ExportDataset } from "../_services/exportService";
 import { Package, Warehouse, Users, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useEffect } from "react";
 
 const exportTypes: { id: ExportDataset; label: string; icon: any }[] = [
   { id: "Inventory", label: "Inventory", icon: Package },
@@ -14,18 +13,14 @@ const exportTypes: { id: ExportDataset; label: string; icon: any }[] = [
 ];
 
 export function ExportCards() {
-  const { config, setDataset } = useExport();
-
-  // Load preview data once on mount
-  useEffect(() => {
-    useExport.getState().loadPreview();
-  }, []);
+  const dataset = useExport((state) => state.config.dataset);
+  const setDataset = useExport((state) => state.setDataset);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {exportTypes.map((type) => {
         const Icon = type.icon;
-        const isSelected = config.dataset === type.id;
+        const isSelected = dataset === type.id;
         
         return (
           <button

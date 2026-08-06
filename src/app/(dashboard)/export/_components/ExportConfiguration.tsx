@@ -1,7 +1,7 @@
 "use client";
 
 import { useExport } from "../_hooks/useExport";
-import { ExportFormat } from "../_services/exportService";
+import { useCategories } from "../_hooks/queries";
 import { cn } from "@/lib/utils";
 import { FileSpreadsheet, FileJson, FileText, Search, X, Loader2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
@@ -9,12 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 export function ExportConfiguration() {
-  const { config, setFormat, setStatus, setCategory, categories, isCategoriesLoading } = useExport();
+  const config = useExport((state) => state.config);
+  const setFormat = useExport((state) => state.setFormat);
+  const setStatus = useExport((state) => state.setStatus);
+  const setCategory = useExport((state) => state.setCategory);
 
-  // Load categories on mount
-  useEffect(() => {
-    useExport.getState().loadCategories();
-  }, []);
+  const { data: categories = [], isLoading: isCategoriesLoading } = useCategories();
 
   // Local search state (not in Zustand — only controls the dropdown filter)
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,6 +134,7 @@ export function ExportConfiguration() {
                       )}
                       aria-label="Search categories"
                       aria-expanded={isDropdownOpen}
+                      aria-controls="category-listbox"
                       role="combobox"
                     />
                     {(config.category || searchQuery) && (
@@ -160,6 +161,7 @@ export function ExportConfiguration() {
                         </div>
                       ) : (
                         <ul
+                          id="category-listbox"
                           className="max-h-[200px] overflow-y-auto py-1"
                           role="listbox"
                         >

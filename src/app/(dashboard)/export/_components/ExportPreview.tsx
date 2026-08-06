@@ -1,6 +1,7 @@
 "use client";
 
 import { useExport } from "../_hooks/useExport";
+import { useExportData } from "../_hooks/queries";
 import { Loader2, Table2 } from "lucide-react";
 import { useMemo } from "react";
 import {
@@ -11,7 +12,10 @@ import {
 } from "@tanstack/react-table";
 
 export function ExportPreview() {
-  const { previewData, isPreviewLoading, config } = useExport();
+  const config = useExport((state) => state.config);
+  const { data = [], isLoading } = useExportData(config);
+
+  const previewData = useMemo(() => data.slice(0, 5), [data]);
 
   const columns = useMemo<ColumnDef<any>[]>(() => {
     if (previewData.length === 0) return [];
@@ -28,12 +32,12 @@ export function ExportPreview() {
   }, [previewData]);
 
   const table = useReactTable({
-    data: previewData.slice(0, 5), // Only show first 5 rows in preview
+    data: previewData, // Only show first 5 rows in preview
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
 
-  if (isPreviewLoading) {
+  if (isLoading) {
     return (
       <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin text-primary/50 mb-2" />
@@ -42,7 +46,7 @@ export function ExportPreview() {
     );
   }
 
-  if (previewData.length === 0) {
+  if (data.length === 0) {
     return (
       <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed text-muted-foreground">
         <Table2 className="h-8 w-8 mb-2 opacity-50" />
@@ -56,7 +60,7 @@ export function ExportPreview() {
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold tracking-tight">Data Preview</h3>
         <p className="text-xs text-muted-foreground">
-          Showing 5 of {previewData.length} total rows
+          Showing {previewData.length} of {data.length} total rows
         </p>
       </div>
       
