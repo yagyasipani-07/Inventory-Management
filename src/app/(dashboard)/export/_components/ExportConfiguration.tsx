@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Button } from "@/components/ui/button";
 
 export function ExportConfiguration() {
-  const { config, setFormat, setStatus, setGroupBy, loadPreview } = useExport();
+  const { config, setFormat, setStatus, setGroupBy } = useExport();
 
   return (
     <div className="rounded-xl border bg-card p-6 shadow-sm">

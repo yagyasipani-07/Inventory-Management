@@ -14,12 +14,12 @@ const exportTypes: { id: ExportDataset; label: string; icon: any }[] = [
 ];
 
 export function ExportCards() {
-  const { config, setDataset, loadPreview } = useExport();
+  const { config, setDataset } = useExport();
 
-  // Reload preview whenever the selected dataset changes
+  // Load preview data once on mount
   useEffect(() => {
-    loadPreview();
-  }, [config.dataset, loadPreview]);
+    useExport.getState().loadPreview();
+  }, []);
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
